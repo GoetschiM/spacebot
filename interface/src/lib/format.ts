@@ -63,7 +63,7 @@ export function platformColor(platform: string): string {
 export const E164_REGEX = /^\+[1-9]\d{5,14}$/;
 
 export const E164_ERROR_TEXT = 
-	"Phone number must be in E.164 format: + followed by country code and 6-15 digits (e.g., +1234567890)";
+	"Phone number must be in E.164 format: + followed by 6-15 digits after '+', with the first digit 1-9 (e.g., +1234567890)";
 
 export function isValidE164(phoneNumber: string): boolean {
 	return E164_REGEX.test(phoneNumber.trim());
@@ -82,7 +82,7 @@ export function validateE164(phoneNumber: string): { valid: boolean; error?: str
 
 /**
  * Validate Signal DM allowed-users entries.
- * Each entry must be E.164 phone, uuid:xxx, or group:xxx.
+ * Each entry must be E.164 phone or uuid:xxx.
  */
 export function validateSignalDmAllowedUsers(
 	raw: string
@@ -94,8 +94,7 @@ export function validateSignalDmAllowedUsers(
 	for (const entry of entries) {
 		if (
 			isValidE164(entry) ||
-			(entry.startsWith('uuid:') && entry.length > 5) ||
-			(entry.startsWith('group:') && entry.length > 6)
+			(entry.startsWith('uuid:') && entry.length > 5)
 		) {
 			valid.push(entry);
 		} else {
@@ -106,7 +105,7 @@ export function validateSignalDmAllowedUsers(
 	if (invalid.length > 0) {
 		return {
 			valid: false,
-			error: `Invalid entries: ${invalid.join(', ')}. Must be E.164 phone numbers (+1234567890), uuid:xxx, or group:xxx`,
+			error: `Invalid entries: ${invalid.join(', ')}. Must be E.164 phone numbers (+1234567890) or uuid:xxx`,
 		};
 	}
 

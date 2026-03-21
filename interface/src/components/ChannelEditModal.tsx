@@ -185,14 +185,17 @@ export function ChannelEditModal({platform, name, status, open, onOpenChange}: C
 				return;
 			}
 			let dmUsers: string | undefined;
-			if (credentialInputs.signal_dm_allowed_users?.trim()) {
-				const result = validateSignalDmAllowedUsers(credentialInputs.signal_dm_allowed_users);
-				if (!result.valid) {
-					setMessage({text: result.error, type: "error"});
-					return;
-				}
-				if (result.entries.length > 0) {
-					dmUsers = result.entries.join(',');
+			const rawDmUsers = credentialInputs.signal_dm_allowed_users;
+			if (rawDmUsers !== undefined) {
+				if (!rawDmUsers.trim()) {
+					dmUsers = "";
+				} else {
+					const result = validateSignalDmAllowedUsers(rawDmUsers);
+					if (!result.valid) {
+						setMessage({text: result.error, type: "error"});
+						return;
+					}
+					dmUsers = result.entries.length > 0 ? result.entries.join(",") : "";
 				}
 			}
 			request.platform_credentials = {
@@ -395,38 +398,35 @@ export function ChannelEditModal({platform, name, status, open, onOpenChange}: C
 							<div className="space-y-3">
 								<div>
 									<label className="mb-1.5 block text-sm font-medium text-ink-dull">HTTP URL</label>
-									<Input
-										size="lg"
-										value={credentialInputs.signal_http_url ?? ""}
-										onChange={(e) => setCredentialInputs({...credentialInputs, signal_http_url: e.target.value})}
-										placeholder="http://127.0.0.1:8686"
-										onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
-									/>
+								<Input
+									value={credentialInputs.signal_http_url ?? ""}
+									onChange={(e) => setCredentialInputs({...credentialInputs, signal_http_url: e.target.value})}
+									placeholder="http://127.0.0.1:8686"
+									onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
+								/>
 								</div>
 								<div>
 									<label className="mb-1.5 block text-sm font-medium text-ink-dull">Account Phone Number</label>
-									<Input
-										size="lg"
-										value={credentialInputs.signal_account ?? ""}
-										onChange={(e) => setCredentialInputs({...credentialInputs, signal_account: e.target.value})}
-										placeholder="+1234567890"
-										onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
-									/>
+								<Input
+									value={credentialInputs.signal_account ?? ""}
+									onChange={(e) => setCredentialInputs({...credentialInputs, signal_account: e.target.value})}
+									placeholder="+1234567890"
+									onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
+								/>
 									<p className="mt-1 text-xs text-ink-faint">
 										Your Signal phone number in E.164 format (+ followed by 6-15 digits, first digit 1-9)
 									</p>
 								</div>
 								<div>
 									<label className="mb-1.5 block text-sm font-medium text-ink-dull">DM Allowed Users (Optional)</label>
-									<Input
-										size="lg"
-										value={credentialInputs.signal_dm_allowed_users ?? ""}
-										onChange={(e) => setCredentialInputs({...credentialInputs, signal_dm_allowed_users: e.target.value})}
-										placeholder="+1234567890, +1987654321"
-										onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
-									/>
+								<Input
+									value={credentialInputs.signal_dm_allowed_users ?? ""}
+									onChange={(e) => setCredentialInputs({...credentialInputs, signal_dm_allowed_users: e.target.value})}
+									placeholder="+1234567890, +1987654321"
+									onKeyDown={(e) => { if (e.key === "Enter") handleSaveCredentials(); }}
+								/>
 									<p className="mt-1 text-xs text-ink-faint">
-										Comma-separated list of phone numbers allowed to DM this bot (if empty, only the bot's own account can DM)
+										Allowed DM senders: E.164 phone numbers (+1234567890) or uuid:xxx identifiers. Comma-separated. If empty, DMs are blocked.
 									</p>
 								</div>
 							</div>
@@ -445,7 +445,7 @@ export function ChannelEditModal({platform, name, status, open, onOpenChange}: C
 						</p>
 					)}
 
-					{platform !== "webhook" && Object.values(credentialInputs).some((v) => v?.trim()) && (
+					{platform !== "webhook" && (Object.values(credentialInputs).some((v) => v?.trim()) || credentialInputs.signal_dm_allowed_users === "") && (
 						<Button onClick={handleSaveCredentials} loading={saveCreds.isPending} size="sm">
 							{configured ? "Update Credentials" : "Connect"}
 						</Button>
