@@ -233,7 +233,8 @@ impl Tool for SendAgentMessageTool {
         // Agent-delegated tasks skip pending_approval and go straight to ready.
         let task = target_task_store
             .create(crate::tasks::CreateTaskInput {
-                agent_id: receiving_agent_id.to_string(),
+                owner_agent_id: sending_agent_id.to_string(),
+                assigned_agent_id: receiving_agent_id.to_string(),
                 title: title.clone(),
                 description: Some(args.message.clone()),
                 status: crate::tasks::TaskStatus::Ready,

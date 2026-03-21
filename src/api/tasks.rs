@@ -109,7 +109,13 @@ pub(super) async fn list_tasks(
     };
 
     let tasks = store
-        .list(&query.agent_id, status, priority, query.limit.clamp(1, 500))
+        .list(crate::tasks::TaskListFilter {
+            assigned_agent_id: Some(query.agent_id.clone()),
+            status,
+            priority,
+            limit: Some(query.limit.clamp(1, 500)),
+            ..Default::default()
+        })
         .await
         .map_err(|error| {
             tracing::warn!(%error, agent_id = %query.agent_id, "failed to list tasks");
@@ -128,7 +134,7 @@ pub(super) async fn get_task(
     let store = stores.get(&query.agent_id).ok_or(StatusCode::NOT_FOUND)?;
 
     let task = store
-        .get_by_number(&query.agent_id, number)
+        .get_by_number(number)
         .await
         .map_err(|error| {
             tracing::warn!(%error, agent_id = %query.agent_id, task_number = number, "failed to get task");
@@ -157,7 +163,8 @@ pub(super) async fn create_task(
 
     let task = store
         .create(crate::tasks::CreateTaskInput {
-            agent_id: request.agent_id.clone(),
+            owner_agent_id: request.agent_id.clone(),
+            assigned_agent_id: request.agent_id.clone(),
             title: request.title,
             description: request.description,
             status,
@@ -176,7 +183,7 @@ pub(super) async fn create_task(
     state
         .event_tx
         .send(super::state::ApiEvent::TaskUpdated {
-            agent_id: task.agent_id.clone(),
+            agent_id: task.assigned_agent_id.clone(),
             task_number: task.task_number,
             status: task.status.to_string(),
             action: "created".to_string(),
@@ -207,7 +214,6 @@ pub(super) async fn update_task(
 
     let task = store
         .update(
-            &request.agent_id,
             number,
             crate::tasks::UpdateTaskInput {
                 title: request.title,
@@ -220,6 +226,7 @@ pub(super) async fn update_task(
                 clear_worker_id: false,
                 approved_by: request.approved_by,
                 complete_subtask: request.complete_subtask,
+                ..Default::default()
             },
         )
         .await
@@ -232,7 +239,7 @@ pub(super) async fn update_task(
     state
         .event_tx
         .send(super::state::ApiEvent::TaskUpdated {
-            agent_id: task.agent_id.clone(),
+            agent_id: task.assigned_agent_id.clone(),
             task_number: task.task_number,
             status: task.status.to_string(),
             action: "updated".to_string(),
@@ -251,7 +258,7 @@ pub(super) async fn delete_task(
     let store = stores.get(&query.agent_id).ok_or(StatusCode::NOT_FOUND)?;
 
     let deleted = store
-        .delete(&query.agent_id, number)
+        .delete(number)
         .await
         .map_err(|error| {
             tracing::warn!(%error, agent_id = %query.agent_id, task_number = number, "failed to delete task");
@@ -288,7 +295,6 @@ pub(super) async fn approve_task(
 
     let task = store
         .update(
-            &request.agent_id,
             number,
             crate::tasks::UpdateTaskInput {
                 status: Some(crate::tasks::TaskStatus::Ready),
@@ -306,7 +312,7 @@ pub(super) async fn approve_task(
     state
         .event_tx
         .send(super::state::ApiEvent::TaskUpdated {
-            agent_id: task.agent_id.clone(),
+            agent_id: task.assigned_agent_id.clone(),
             task_number: task.task_number,
             status: task.status.to_string(),
             action: "updated".to_string(),
@@ -328,7 +334,7 @@ pub(super) async fn execute_task(
 
     // Fetch current task to check if transition is needed.
     let current = store
-        .get_by_number(&request.agent_id, number)
+        .get_by_number(number)
         .await
         .map_err(|error| {
             tracing::warn!(%error, agent_id = %request.agent_id, task_number = number, "failed to get task for execution");
@@ -346,7 +352,6 @@ pub(super) async fn execute_task(
 
     let task = store
         .update(
-            &request.agent_id,
             number,
             crate::tasks::UpdateTaskInput {
                 status: Some(crate::tasks::TaskStatus::Ready),
@@ -364,7 +369,7 @@ pub(super) async fn execute_task(
     state
         .event_tx
         .send(super::state::ApiEvent::TaskUpdated {
-            agent_id: task.agent_id.clone(),
+            agent_id: task.assigned_agent_id.clone(),
             task_number: task.task_number,
             status: task.status.to_string(),
             action: "updated".to_string(),
