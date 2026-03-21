@@ -8,38 +8,38 @@
   inherit (pkgs) lib onnxruntime stdenv;
 
   bunInstallOs =
-    if stdenv.hostPlatform.isDarwin
+    if stdenv.buildPlatform.isDarwin
     then "darwin"
-    else if stdenv.hostPlatform.isLinux
+    else if stdenv.buildPlatform.isLinux
     then "linux"
-    else throw "Unsupported host platform for frontend Bun install: ${stdenv.hostPlatform.system}";
+    else throw "Unsupported host platform for frontend Bun install: ${stdenv.buildPlatform.system}";
 
   bunInstallCpu =
-    if stdenv.hostPlatform.isAarch64
+    if stdenv.buildPlatform.isAarch64
     then "arm64"
-    else if stdenv.hostPlatform.isx86_64
+    else if stdenv.buildPlatform.isx86_64
     then "x64"
-    else throw "Unsupported host CPU for frontend Bun install: ${stdenv.hostPlatform.system}";
+    else throw "Unsupported host CPU for frontend Bun install: ${stdenv.buildPlatform.system}";
 
   rollupNativePackage =
-    if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isx86_64
+    if stdenv.buildPlatform.isLinux && stdenv.buildPlatform.isx86_64
     then "@rollup/rollup-linux-x64-gnu"
-    else if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64
+    else if stdenv.buildPlatform.isLinux && stdenv.buildPlatform.isAarch64
     then "@rollup/rollup-linux-arm64-gnu"
-    else if stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isx86_64
+    else if stdenv.buildPlatform.isDarwin && stdenv.buildPlatform.isx86_64
     then "@rollup/rollup-darwin-x64"
-    else if stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isAarch64
+    else if stdenv.buildPlatform.isDarwin && stdenv.buildPlatform.isAarch64
     then "@rollup/rollup-darwin-arm64"
     else null;
 
   esbuildNativePackage =
-    if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isx86_64
+    if stdenv.buildPlatform.isLinux && stdenv.buildPlatform.isx86_64
     then "@esbuild/linux-x64"
-    else if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64
+    else if stdenv.buildPlatform.isLinux && stdenv.buildPlatform.isAarch64
     then "@esbuild/linux-arm64"
-    else if stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isx86_64
+    else if stdenv.buildPlatform.isDarwin && stdenv.buildPlatform.isx86_64
     then "@esbuild/darwin-x64"
-    else if stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isAarch64
+    else if stdenv.buildPlatform.isDarwin && stdenv.buildPlatform.isAarch64
     then "@esbuild/darwin-arm64"
     else null;
 

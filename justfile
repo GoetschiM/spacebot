@@ -58,7 +58,7 @@ desktop-build:
 # Usage: Update interface/package.json or interface/bun.lock, then run: just update-frontend-hash
 update-frontend-hash:
     #!/usr/bin/env bash
-    set -e
+    set -euo pipefail
     echo "Building frontend-updater to get new hash..."
     output=$(nix build .#frontend-updater 2>&1 || true)
     new_hash=$(echo "$output" | awk '/got:/ {print $2}' || true)
