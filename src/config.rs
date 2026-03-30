@@ -565,6 +565,7 @@ bind = "127.0.0.1"
             app_token: "xapp-test".into(),
             instances: vec![],
             dm_allowed_users,
+            settings: None,
             commands: vec![],
         }
     }
@@ -582,6 +583,7 @@ bind = "127.0.0.1"
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users,
+            settings: None,
         }
     }
 
@@ -1439,6 +1441,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         assert_eq!(binding.runtime_adapter_key(), "telegram:sales");
     }
@@ -1456,6 +1459,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         assert!(binding.uses_default_adapter());
     }
@@ -1488,6 +1492,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         let message = test_inbound_message("telegram", None);
         assert!(binding_adapter_matches(&binding, &message));
@@ -1506,6 +1511,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         let message = test_inbound_message("telegram", Some("telegram:support"));
         assert!(binding_adapter_matches(&binding, &message));
@@ -1524,6 +1530,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         let message = test_inbound_message("telegram", None);
         assert!(!binding_adapter_matches(&binding, &message));
@@ -1542,6 +1549,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         let message = test_inbound_message("telegram", Some("telegram:support"));
         assert!(!binding_adapter_matches(&binding, &message));
@@ -1560,6 +1568,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         };
         let message = test_inbound_message("telegram", Some("telegram:sales"));
         assert!(!binding_adapter_matches(&binding, &message));
@@ -1578,8 +1587,10 @@ maintenance_merge_similarity_threshold = 1.1
                     enabled: true,
                     token: "tok2".into(),
                     dm_allowed_users: vec![],
+                    settings: None,
                 }],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1599,6 +1610,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
             Binding {
                 agent_id: "support-agent".into(),
@@ -1611,6 +1623,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
         ];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
@@ -1628,6 +1641,7 @@ maintenance_merge_similarity_threshold = 1.1
                 token: "tok".into(),
                 instances: vec![],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1646,6 +1660,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
@@ -1713,6 +1728,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
@@ -1735,8 +1751,10 @@ maintenance_merge_similarity_threshold = 1.1
                     enabled: true,
                     token: "tok".into(),
                     dm_allowed_users: vec![],
+                    settings: None,
                 }],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1756,6 +1774,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
@@ -1778,8 +1797,10 @@ maintenance_merge_similarity_threshold = 1.1
                     enabled: true,
                     token: "tok2".into(),
                     dm_allowed_users: vec![],
+                    settings: None,
                 }],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1800,6 +1821,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
             // Invalid: references a non-existent named adapter
             Binding {
@@ -1813,6 +1835,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
             // Valid: references an existing named adapter
             Binding {
@@ -1826,6 +1849,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
             // Invalid: no discord config at all
             Binding {
@@ -1839,6 +1863,7 @@ maintenance_merge_similarity_threshold = 1.1
                 channel_ids: vec![],
                 require_mention: false,
                 dm_allowed_users: vec![],
+                settings: None,
             },
         ];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
@@ -1875,6 +1900,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
@@ -1907,6 +1933,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, true);
         assert!(
@@ -1928,8 +1955,10 @@ maintenance_merge_similarity_threshold = 1.1
                     enabled: false,
                     token: "tok2".into(),
                     dm_allowed_users: vec![],
+                    settings: None,
                 }],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1948,6 +1977,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
@@ -1967,6 +1997,7 @@ maintenance_merge_similarity_threshold = 1.1
                 token: "tok".into(),
                 instances: vec![],
                 dm_allowed_users: vec![],
+                settings: None,
             }),
             email: None,
             webhook: None,
@@ -1985,6 +2016,7 @@ maintenance_merge_similarity_threshold = 1.1
             channel_ids: vec![],
             require_mention: false,
             dm_allowed_users: vec![],
+            settings: None,
         }];
         let result = validate_named_messaging_adapters(&messaging, bindings, false)
             .expect("bindings should be resolvable");
