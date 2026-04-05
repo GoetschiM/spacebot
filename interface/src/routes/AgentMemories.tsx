@@ -55,7 +55,7 @@ function TypeBadge({type: memoryType}: {type: MemoryType}) {
 function ImportanceBar({value}: {value: number}) {
 	return (
 		<div className="flex items-center gap-1.5">
-			<div className="h-1.5 w-16 overflow-hidden rounded-full bg-app-darkBox">
+			<div className="h-1.5 w-16 overflow-hidden rounded-full bg-app-dark-box">
 				<div
 					className="h-full rounded-full bg-accent/60"
 					style={{width: `${Math.round(value * 100)}%`}}
@@ -153,7 +153,7 @@ export function AgentMemories({agentId}: AgentMemoriesProps) {
 	return (
 		<div className="flex h-full flex-col overflow-hidden">
 			{/* Toolbar */}
-			<div className="flex items-center gap-3 border-b border-app-line/50 bg-app-darkBox/20 px-6 py-3">
+			<div className="flex items-center gap-3 border-b border-app-line/50 bg-app-dark-box/20 px-6 py-3">
 				{/* Search */}
 				<SearchBar
 					placeholder="Search memories..."
@@ -323,7 +323,7 @@ export function AgentMemories({agentId}: AgentMemoriesProps) {
 															stiffness: 500,
 															damping: 35,
 														}}
-														className="overflow-hidden border-t border-app-line/30 bg-app-darkBox/20 px-6"
+														className="overflow-hidden border-t border-app-line/30 bg-app-dark-box/20 px-6"
 													>
 														<div className="py-4">
 															<p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-dull">

@@ -1,28 +1,53 @@
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/api/client";
-import type { ChannelInfo } from "@/api/client";
-import type { ConversationSettings, ConversationDefaultsResponse } from "@/api/types";
-import { isOpenCodeWorker, type ActiveBranch, type ActiveWorker, type ChannelLiveState } from "@/hooks/useChannelLiveState";
-import { LiveDuration } from "@/components/LiveDuration";
-import { ConversationSettingsPanel } from "@/components/ConversationSettingsPanel";
-import { PopoverRoot, PopoverTrigger, PopoverContent } from "@spacedrive/primitives";
-import { formatTimeAgo, formatTimestamp, platformIcon, platformColor } from "@/lib/format";
+import {useEffect, useState} from "react";
+import {Link} from "@tanstack/react-router";
+import {AnimatePresence, motion} from "framer-motion";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {api} from "@/api/client";
+import type {ChannelInfo} from "@/api/client";
+import type {
+	ConversationSettings,
+	ConversationDefaultsResponse,
+} from "@/api/types";
+import {
+	isOpenCodeWorker,
+	type ActiveBranch,
+	type ActiveWorker,
+	type ChannelLiveState,
+} from "@/hooks/useChannelLiveState";
+import {LiveDuration} from "@/components/LiveDuration";
+import {ConversationSettingsPanel} from "@/components/ConversationSettingsPanel";
+import {
+	PopoverRoot,
+	PopoverTrigger,
+	PopoverContent,
+} from "@spacedrive/primitives";
+import {
+	formatTimeAgo,
+	formatTimestamp,
+	platformIcon,
+	platformColor,
+} from "@/lib/format";
 
 const VISIBLE_MESSAGES = 6;
 
-function WorkerBadge({ worker }: { worker: ActiveWorker }) {
+function WorkerBadge({worker}: {worker: ActiveWorker}) {
 	const oc = isOpenCodeWorker(worker);
 	return (
-		<div className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-tiny ${
-			oc ? "bg-zinc-500/10" : "bg-amber-500/10"
-		}`}>
-			<div className={`h-1.5 w-1.5 animate-pulse rounded-full ${oc ? "bg-zinc-400" : "bg-amber-400"}`} />
+		<div
+			className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-tiny ${
+				oc ? "bg-zinc-500/10" : "bg-amber-500/10"
+			}`}
+		>
+			<div
+				className={`h-1.5 w-1.5 animate-pulse rounded-full ${oc ? "bg-zinc-400" : "bg-amber-400"}`}
+			/>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-1.5">
-					<span className={`font-medium ${oc ? "text-zinc-300" : "text-amber-300"}`}>Worker</span>
+					<span
+						className={`font-medium ${oc ? "text-zinc-300" : "text-amber-300"}`}
+					>
+						Worker
+					</span>
 					<span className="truncate text-ink-dull">{worker.task}</span>
 				</div>
 				<div className="mt-0.5 flex items-center gap-2 text-ink-faint">
@@ -30,7 +55,9 @@ function WorkerBadge({ worker }: { worker: ActiveWorker }) {
 					{worker.currentTool && (
 						<>
 							<span className="text-ink-faint/50">·</span>
-							<span className={oc ? "text-zinc-400/70" : "text-amber-400/70"}>{worker.currentTool}</span>
+							<span className={oc ? "text-zinc-400/70" : "text-amber-400/70"}>
+								{worker.currentTool}
+							</span>
 						</>
 					)}
 					{worker.toolCalls > 0 && (
@@ -45,7 +72,7 @@ function WorkerBadge({ worker }: { worker: ActiveWorker }) {
 	);
 }
 
-function BranchBadge({ branch }: { branch: ActiveBranch }) {
+function BranchBadge({branch}: {branch: ActiveBranch}) {
 	const displayTool = branch.currentTool ?? branch.lastTool;
 	return (
 		<div className="flex items-center gap-2 rounded-md bg-violet-500/10 px-2.5 py-1.5 text-tiny">
@@ -60,7 +87,15 @@ function BranchBadge({ branch }: { branch: ActiveBranch }) {
 					{displayTool && (
 						<>
 							<span className="text-ink-faint/50">·</span>
-							<span className={branch.currentTool ? "text-violet-400/70" : "text-violet-400/40"}>{displayTool}</span>
+							<span
+								className={
+									branch.currentTool
+										? "text-violet-400/70"
+										: "text-violet-400/40"
+								}
+							>
+								{displayTool}
+							</span>
 						</>
 					)}
 					{branch.toolCalls > 0 && (
@@ -94,13 +129,13 @@ export function ChannelCard({
 	const [showSettings, setShowSettings] = useState(false);
 	const [settings, setSettings] = useState<ConversationSettings>({});
 
-	const { data: defaults } = useQuery<ConversationDefaultsResponse>({
+	const {data: defaults} = useQuery<ConversationDefaultsResponse>({
 		queryKey: ["conversation-defaults", channel.agent_id],
 		queryFn: () => api.getConversationDefaults(channel.agent_id),
 		enabled: showSettings,
 	});
 
-	const { data: channelSettingsData } = useQuery({
+	const {data: channelSettingsData} = useQuery({
 		queryKey: ["channel-settings", channel.id, channel.agent_id],
 		queryFn: () => api.getChannelSettings(channel.id, channel.agent_id),
 		enabled: showSettings,
@@ -114,17 +149,23 @@ export function ChannelCard({
 
 	const deleteChannel = useMutation({
 		mutationFn: () => api.deleteChannel(channel.agent_id, channel.id),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
+		onSuccess: () => queryClient.invalidateQueries({queryKey: ["channels"]}),
 	});
 
 	const saveSettingsMutation = useMutation({
 		mutationFn: async () => {
-			const response = await api.updateChannelSettings(channel.id, channel.agent_id, settings);
+			const response = await api.updateChannelSettings(
+				channel.id,
+				channel.agent_id,
+				settings,
+			);
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["channel-settings", channel.id] });
-			queryClient.invalidateQueries({ queryKey: ["channels"] });
+			queryClient.invalidateQueries({
+				queryKey: ["channel-settings", channel.id],
+			});
+			queryClient.invalidateQueries({queryKey: ["channels"]});
 			setShowSettings(false);
 		},
 	});
@@ -132,19 +173,21 @@ export function ChannelCard({
 	return (
 		<Link
 			to="/agents/$agentId/channels/$channelId"
-			params={{ agentId: channel.agent_id, channelId: channel.id }}
-			className="group/card flex flex-col rounded-lg border border-app-line bg-app-darkBox transition-colors hover:border-app-line/80 hover:bg-app-darkBox/80"
+			params={{agentId: channel.agent_id, channelId: channel.id}}
+			className="group/card flex flex-col rounded-lg border border-app-line bg-app-dark-box transition-colors hover:border-app-line/80 hover:bg-app-dark-box/80"
 		>
 			{/* Header */}
 			<div className="flex items-start justify-between p-4 pb-2">
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-					<h3 className="truncate font-medium text-ink">
-						{channel.display_name ?? channel.id}
-						{channel.display_name && (
-							<span className="ml-2 font-normal text-ink-faint text-tiny">{channel.id}</span>
-						)}
-					</h3>
+						<h3 className="truncate font-medium text-ink">
+							{channel.display_name ?? channel.id}
+							{channel.display_name && (
+								<span className="ml-2 font-normal text-ink-faint text-tiny">
+									{channel.id}
+								</span>
+							)}
+						</h3>
 						{isTyping && (
 							<div className="flex items-center gap-1">
 								<span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
@@ -154,7 +197,9 @@ export function ChannelCard({
 						)}
 					</div>
 					<div className="mt-1 flex items-center gap-2">
-						<span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-tiny font-medium ${platformColor(channel.platform)}`}>
+						<span
+							className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-tiny font-medium ${platformColor(channel.platform)}`}
+						>
 							{platformIcon(channel.platform)}
 						</span>
 						<span className="text-tiny text-ink-faint">
@@ -191,13 +236,28 @@ export function ChannelCard({
 								className="rounded p-1 text-ink-faint opacity-0 transition-opacity hover:bg-ink/10 hover:text-ink group-hover/card:opacity-100"
 								title="Channel settings"
 							>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
 									<circle cx="12" cy="12" r="3" />
 									<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
 								</svg>
 							</button>
 						</PopoverTrigger>
-						<PopoverContent align="end" sideOffset={4} collisionPadding={16} className="max-h-[80vh] w-96 overflow-y-auto p-3" onClick={(e) => e.preventDefault()}>
+						<PopoverContent
+							align="end"
+							sideOffset={4}
+							collisionPadding={16}
+							className="max-h-[80vh] w-96 overflow-y-auto p-3"
+							onClick={(e) => e.preventDefault()}
+						>
 							{defaults && channelSettingsData ? (
 								<ConversationSettingsPanel
 									defaults={defaults}
@@ -208,7 +268,9 @@ export function ChannelCard({
 									saving={saveSettingsMutation.isPending}
 								/>
 							) : (
-								<div className="py-4 text-center text-xs text-ink-faint">Loading...</div>
+								<div className="py-4 text-center text-xs text-ink-faint">
+									Loading...
+								</div>
 							)}
 						</PopoverContent>
 					</PopoverRoot>
@@ -221,15 +283,28 @@ export function ChannelCard({
 						className="rounded p-1 text-ink-faint opacity-0 transition-opacity hover:bg-ink/10 hover:text-ink group-hover/card:opacity-100"
 						title="Delete channel"
 					>
-						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 16 16"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
 							<path d="M4 4l8 8M12 4l-8 8" />
 						</svg>
 					</button>
-					<div className={`h-2 w-2 rounded-full ${
-						hasActivity ? "bg-amber-400 animate-pulse" :
-						isTyping ? "bg-accent animate-pulse" :
-						"bg-green-500/60"
-					}`} />
+					<div
+						className={`h-2 w-2 rounded-full ${
+							hasActivity
+								? "bg-amber-400 animate-pulse"
+								: isTyping
+									? "bg-accent animate-pulse"
+									: "bg-green-500/60"
+						}`}
+					/>
 				</div>
 			</div>
 
@@ -259,21 +334,29 @@ export function ChannelCard({
 							return (
 								<motion.div
 									key={message.id}
-									initial={{ opacity: 0, height: 0, marginTop: 0 }}
-									animate={{ opacity: 1, height: "auto", marginTop: 4 }}
-									exit={{ opacity: 0, height: 0, marginTop: 0 }}
-									transition={{ type: "spring", stiffness: 500, damping: 35 }}
+									initial={{opacity: 0, height: 0, marginTop: 0}}
+									animate={{opacity: 1, height: "auto", marginTop: 4}}
+									exit={{opacity: 0, height: 0, marginTop: 0}}
+									transition={{type: "spring", stiffness: 500, damping: 35}}
 									className="flex gap-2 overflow-hidden text-sm first:!mt-0"
 								>
 									<span className="flex-shrink-0 text-tiny text-ink-faint">
 										{formatTimestamp(new Date(message.created_at).getTime())}
 									</span>
-									<span className={`flex-shrink-0 text-tiny font-medium ${
-										message.role === "user" ? "text-accent-faint" : "text-green-400"
-									}`}>
-										{message.role === "user" ? (message.sender_name ?? "user") : (message.sender_name ?? "bot")}
+									<span
+										className={`flex-shrink-0 text-tiny font-medium ${
+											message.role === "user"
+												? "text-accent-faint"
+												: "text-green-400"
+										}`}
+									>
+										{message.role === "user"
+											? (message.sender_name ?? "user")
+											: (message.sender_name ?? "bot")}
 									</span>
-									<p className="line-clamp-1 text-sm text-ink-faint">{message.content}</p>
+									<p className="line-clamp-1 text-sm text-ink-faint">
+										{message.content}
+									</p>
 								</motion.div>
 							);
 						})}

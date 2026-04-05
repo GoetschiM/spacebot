@@ -5,7 +5,7 @@ import {OpenCodeEmbed} from "@/components/OpenCodeEmbed";
 import {LiveDuration} from "@/components/LiveDuration";
 import {Badge} from "@spacedrive/primitives";
 import {useLiveContext} from "@/hooks/useLiveContext";
-import { cx } from "class-variance-authority";
+import {cx} from "class-variance-authority";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -117,7 +117,10 @@ export function Orchestrate() {
 
 	// -- Apply agent filter --
 	const filteredWorkers = useMemo(
-		() => agentFilter ? allWorkers.filter((w) => w.agent_id === agentFilter) : allWorkers,
+		() =>
+			agentFilter
+				? allWorkers.filter((w) => w.agent_id === agentFilter)
+				: allWorkers,
 		[allWorkers, agentFilter],
 	);
 
@@ -219,7 +222,9 @@ export function Orchestrate() {
 						>
 							<option value="">All</option>
 							{activeAgents.map(({id, name}) => (
-								<option key={id} value={id}>{name}</option>
+								<option key={id} value={id}>
+									{name}
+								</option>
 							))}
 						</select>
 					</div>
@@ -227,7 +232,8 @@ export function Orchestrate() {
 
 				{/* Worker count */}
 				<div className="ml-auto text-tiny text-ink-faint">
-					{filteredWorkers.length} active worker{filteredWorkers.length !== 1 ? "s" : ""}
+					{filteredWorkers.length} active worker
+					{filteredWorkers.length !== 1 ? "s" : ""}
 				</div>
 			</div>
 
@@ -260,7 +266,16 @@ function EmptyState() {
 	return (
 		<div className="flex h-full flex-col items-center justify-center gap-3 text-ink-faint">
 			<div className="flex h-12 w-12 items-center justify-center rounded-full border border-app-line">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+				<svg
+					width="24"
+					height="24"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.5"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
 					<rect x="2" y="3" width="20" height="18" rx="2" />
 					<line x1="9" y1="3" x2="9" y2="21" />
 					<line x1="15" y1="3" x2="15" y2="21" />
@@ -310,7 +325,7 @@ function WorkerColumn({worker}: {worker: OrchestrationWorker}) {
 	const taskText = worker.task.replace(/^\[opencode\]\s*/i, "");
 
 	return (
-		<div className="flex h-[calc(100vh-9rem)] w-[560px] flex-shrink-0 flex-col overflow-hidden rounded-lg border border-app-line bg-app-darkBox">
+		<div className="flex h-[calc(100vh-9rem)] w-[560px] flex-shrink-0 flex-col overflow-hidden rounded-lg border border-app-line bg-app-dark-box">
 			{/* Column header */}
 			<div className="flex flex-col gap-1 border-b border-app-line px-3 py-2">
 				<div className="flex items-center gap-2">
@@ -324,7 +339,10 @@ function WorkerColumn({worker}: {worker: OrchestrationWorker}) {
 						)}
 					/>
 					{/* Task text */}
-					<p className="min-w-0 flex-1 truncate text-xs font-medium text-ink" title={taskText}>
+					<p
+						className="min-w-0 flex-1 truncate text-xs font-medium text-ink"
+						title={taskText}
+					>
 						{taskText}
 					</p>
 					{/* Cancel button for running workers */}
@@ -343,7 +361,9 @@ function WorkerColumn({worker}: {worker: OrchestrationWorker}) {
 					{toolCalls > 0 && (
 						<>
 							<span>&middot;</span>
-							<span>{toolCalls} tool{toolCalls !== 1 ? "s" : ""}</span>
+							<span>
+								{toolCalls} tool{toolCalls !== 1 ? "s" : ""}
+							</span>
 						</>
 					)}
 				</div>

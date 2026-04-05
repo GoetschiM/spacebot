@@ -1,9 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
-import { api, type SkillInfo, type RegistrySkill, type RegistryView } from "@/api/client";
-import { Button, Badge, DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@spacedrive/primitives";
-import { clsx } from "clsx";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {useState, useEffect, useRef, useCallback} from "react";
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+	useInfiniteQuery,
+} from "@tanstack/react-query";
+import {
+	api,
+	type SkillInfo,
+	type RegistrySkill,
+	type RegistryView,
+} from "@/api/client";
+import {
+	Button,
+	Badge,
+	DialogRoot,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+} from "@spacedrive/primitives";
+import {clsx} from "clsx";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faDownload,
 	faTrash,
@@ -49,7 +67,7 @@ function InstalledSkillDetailModal({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
-	const { data, isLoading } = useQuery({
+	const {data, isLoading} = useQuery({
 		queryKey: ["skill-content", agentId, skill?.name],
 		queryFn: () => api.getSkillContent(agentId, skill!.name),
 		enabled: open && !!skill,
@@ -62,7 +80,10 @@ function InstalledSkillDetailModal({
 					<div className="flex items-center gap-2">
 						<DialogTitle>{skill?.name ?? "Skill"}</DialogTitle>
 						{skill && (
-							<Badge variant={skill.source === "instance" ? "accent" : "green"} size="sm">
+							<Badge
+								variant={skill.source === "instance" ? "accent" : "green"}
+								size="sm"
+							>
 								{skill.source}
 							</Badge>
 						)}
@@ -74,8 +95,13 @@ function InstalledSkillDetailModal({
 
 				{isLoading && (
 					<div className="flex items-center justify-center py-8">
-						<FontAwesomeIcon icon={faSpinner} className="animate-spin text-ink-faint" />
-						<span className="ml-2 text-sm text-ink-faint">Loading skill content...</span>
+						<FontAwesomeIcon
+							icon={faSpinner}
+							className="animate-spin text-ink-faint"
+						/>
+						<span className="ml-2 text-sm text-ink-faint">
+							Loading skill content...
+						</span>
 					</div>
 				)}
 
@@ -91,7 +117,10 @@ function InstalledSkillDetailModal({
 									className="font-mono transition-colors hover:text-accent"
 								>
 									{data.source_repo}
-									<FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-[10px]" />
+									<FontAwesomeIcon
+										icon={faExternalLinkAlt}
+										className="ml-1 text-[10px]"
+									/>
 								</a>
 							</div>
 						)}
@@ -123,7 +152,7 @@ function RegistrySkillDetailModal({
 	isInstalled: boolean;
 	isInstalling: boolean;
 }) {
-	const { data, isLoading } = useQuery({
+	const {data, isLoading} = useQuery({
 		queryKey: ["registry-skill-content", skill?.source, skill?.skillId],
 		queryFn: () => api.registrySkillContent(skill!.source, skill!.skillId),
 		enabled: open && !!skill,
@@ -148,7 +177,10 @@ function RegistrySkillDetailModal({
 							>
 								{isInstalling ? (
 									<>
-										<FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+										<FontAwesomeIcon
+											icon={faSpinner}
+											className="animate-spin"
+										/>
 										Installing...
 									</>
 								) : (
@@ -180,7 +212,10 @@ function RegistrySkillDetailModal({
 							className="font-mono transition-colors hover:text-accent"
 						>
 							{skill.source}
-							<FontAwesomeIcon icon={faExternalLinkAlt} className="ml-1 text-[10px]" />
+							<FontAwesomeIcon
+								icon={faExternalLinkAlt}
+								className="ml-1 text-[10px]"
+							/>
 						</a>
 						{skill.installs > 0 && (
 							<>
@@ -193,13 +228,18 @@ function RegistrySkillDetailModal({
 
 				{isLoading && (
 					<div className="flex items-center justify-center py-8">
-						<FontAwesomeIcon icon={faSpinner} className="animate-spin text-ink-faint" />
-						<span className="ml-2 text-sm text-ink-faint">Loading skill content...</span>
+						<FontAwesomeIcon
+							icon={faSpinner}
+							className="animate-spin text-ink-faint"
+						/>
+						<span className="ml-2 text-sm text-ink-faint">
+							Loading skill content...
+						</span>
 					</div>
 				)}
 
 				{data && !data.content && !isLoading && (
-					<div className="rounded-md border border-app-line bg-app-darkBox p-6 text-center">
+					<div className="rounded-md border border-app-line bg-app-dark-box p-6 text-center">
 						<p className="text-sm text-ink-faint">
 							Could not fetch SKILL.md from GitHub.
 						</p>
@@ -213,11 +253,13 @@ function RegistrySkillDetailModal({
 }
 
 /** Shared component that renders a SKILL.md content block. */
-function SkillContentBlock({ content }: { content: string }) {
+function SkillContentBlock({content}: {content: string}) {
 	return (
-		<div className="rounded-md border border-app-line bg-app-darkBox">
+		<div className="rounded-md border border-app-line bg-app-dark-box">
 			<div className="border-b border-app-line px-4 py-2">
-				<span className="font-mono text-xs font-medium text-ink-faint">SKILL.md</span>
+				<span className="font-mono text-xs font-medium text-ink-faint">
+					SKILL.md
+				</span>
 			</div>
 			<pre className="overflow-x-auto whitespace-pre-wrap p-4 font-mono text-xs leading-relaxed text-ink-dull">
 				{content}
@@ -248,7 +290,10 @@ function InstalledSkill({
 						<h3 className="truncate font-plex text-sm font-medium text-ink">
 							{skill.name}
 						</h3>
-						<Badge variant={skill.source === "instance" ? "accent" : "green"} size="sm">
+						<Badge
+							variant={skill.source === "instance" ? "accent" : "green"}
+							size="sm"
+						>
 							{skill.source}
 						</Badge>
 					</div>
@@ -306,7 +351,9 @@ function RegistrySkillCard({
 					{skill.name}
 				</h3>
 			</div>
-			<p className="mt-1 font-mono text-[11px] text-ink-dull/60">{skill.source}</p>
+			<p className="mt-1 font-mono text-[11px] text-ink-dull/60">
+				{skill.source}
+			</p>
 			<p className="mt-2 flex-1 text-xs text-ink-faint">
 				{skill.description || "No description provided"}
 			</p>
@@ -326,13 +373,14 @@ function RegistrySkillCard({
 						}
 					}}
 					disabled={isInstalling || isRemoving}
-					className={clsx(
-						"group h-6 w-6 p-0",
-					)}
+					className={clsx("group h-6 w-6 p-0")}
 					title={isInstalled ? "Remove installed skill" : "Install skill"}
 				>
 					{isInstalling || isRemoving ? (
-						<FontAwesomeIcon icon={faSpinner} className="animate-spin text-xs" />
+						<FontAwesomeIcon
+							icon={faSpinner}
+							className="animate-spin text-xs"
+						/>
 					) : isInstalled ? (
 						<span className="relative flex h-3.5 w-3.5 items-center justify-center text-xs">
 							<FontAwesomeIcon
@@ -353,13 +401,13 @@ function RegistrySkillCard({
 	);
 }
 
-const VIEWS: { key: RegistryView; label: string; icon: typeof faFire }[] = [
-	{ key: "all-time", label: "All Time", icon: faTrophy },
-	{ key: "trending", label: "Trending", icon: faBolt },
-	{ key: "hot", label: "Hot", icon: faFire },
+const VIEWS: {key: RegistryView; label: string; icon: typeof faFire}[] = [
+	{key: "all-time", label: "All Time", icon: faTrophy},
+	{key: "trending", label: "Trending", icon: faBolt},
+	{key: "hot", label: "Hot", icon: faFire},
 ];
 
-export function AgentSkills({ agentId }: AgentSkillsProps) {
+export function AgentSkills({agentId}: AgentSkillsProps) {
 	const queryClient = useQueryClient();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -373,7 +421,8 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 	const [detailModalOpen, setDetailModalOpen] = useState(false);
 
 	// Registry skill detail modal state
-	const [selectedRegistrySkill, setSelectedRegistrySkill] = useState<RegistrySkill | null>(null);
+	const [selectedRegistrySkill, setSelectedRegistrySkill] =
+		useState<RegistrySkill | null>(null);
 	const [registryDetailOpen, setRegistryDetailOpen] = useState(false);
 
 	// Debounce search input
@@ -391,7 +440,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 	}, [searchQuery]);
 
 	// Installed skills
-	const { data: skillsData, isLoading } = useQuery({
+	const {data: skillsData, isLoading} = useQuery({
 		queryKey: ["skills", agentId],
 		queryFn: () => api.listSkills(agentId),
 		refetchInterval: 10_000,
@@ -406,7 +455,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 		isLoading: isBrowseLoading,
 	} = useInfiniteQuery({
 		queryKey: ["registry-browse", registryView],
-		queryFn: ({ pageParam }) => api.registryBrowse(registryView, pageParam),
+		queryFn: ({pageParam}) => api.registryBrowse(registryView, pageParam),
 		initialPageParam: 0,
 		getNextPageParam: (lastPage, _allPages, lastPageParam) =>
 			lastPage.has_more ? lastPageParam + 1 : undefined,
@@ -414,7 +463,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 	});
 
 	// Registry search
-	const { data: searchData, isLoading: isSearching } = useQuery({
+	const {data: searchData, isLoading: isSearching} = useQuery({
 		queryKey: ["registry-search", debouncedSearch],
 		queryFn: () => api.registrySearch(debouncedSearch),
 		enabled: activeTab === "browse" && debouncedSearch.length >= 2,
@@ -424,7 +473,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 	const handleScroll = useCallback(() => {
 		const el = scrollRef.current;
 		if (!el || !hasNextPage || isFetchingNextPage || debouncedSearch) return;
-		const { scrollTop, scrollHeight, clientHeight } = el;
+		const {scrollTop, scrollHeight, clientHeight} = el;
 		if (scrollHeight - scrollTop - clientHeight < 400) {
 			fetchNextPage();
 		}
@@ -445,7 +494,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 				instance: false,
 			}),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["skills", agentId] });
+			queryClient.invalidateQueries({queryKey: ["skills", agentId]});
 		},
 	});
 
@@ -457,7 +506,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 				instance: false,
 			}),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["skills", agentId] });
+			queryClient.invalidateQueries({queryKey: ["skills", agentId]});
 		},
 	});
 
@@ -468,14 +517,14 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 				name,
 			}),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["skills", agentId] });
+			queryClient.invalidateQueries({queryKey: ["skills", agentId]});
 		},
 	});
 
 	const uploadMutation = useMutation({
 		mutationFn: (files: File[]) => api.uploadSkillFiles(agentId, files),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["skills", agentId] });
+			queryClient.invalidateQueries({queryKey: ["skills", agentId]});
 		},
 		onSettled: () => {
 			if (fileInputRef.current) {
@@ -541,7 +590,8 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 						? Boolean(
 								installedKeys.get(
 									`${selectedRegistrySkill.source}/${selectedRegistrySkill.name}`.toLowerCase(),
-								) ?? installedKeys.get(selectedRegistrySkill.name.toLowerCase()),
+								) ??
+								installedKeys.get(selectedRegistrySkill.name.toLowerCase()),
 							)
 						: false
 				}
@@ -613,7 +663,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
 									placeholder="Search skills..."
-									className="w-full rounded-md border border-app-line bg-app-darkBox py-2 pl-10 pr-3 text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
+									className="w-full rounded-md border border-app-line bg-app-dark-box py-2 pl-10 pr-3 text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							{!debouncedSearch && (
@@ -668,7 +718,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 										type="text"
 										name="spec"
 										placeholder="owner/repo or owner/repo/skill-name"
-										className="flex-1 rounded-md border border-app-line bg-app-darkBox px-3 py-2 text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
+										className="flex-1 rounded-md border border-app-line bg-app-dark-box px-3 py-2 text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 									/>
 									<Button
 										type="submit"
@@ -699,8 +749,8 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 								)}
 								{githubInstallMutation.isSuccess && (
 									<p className="mt-2 text-xs text-green-400">
-										Installed {githubInstallMutation.data.installed.length} skill(s):{" "}
-										{githubInstallMutation.data.installed.join(", ")}
+										Installed {githubInstallMutation.data.installed.length}{" "}
+										skill(s): {githubInstallMutation.data.installed.join(", ")}
 									</p>
 								)}
 							</div>
@@ -711,15 +761,15 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 										? `Results for "${debouncedSearch}"`
 										: `${VIEWS.find((v) => v.key === registryView)?.label ?? ""} Skills`}
 								</h2>
-							<span className="text-xs text-ink-faint">
-								{debouncedSearch && searchData
-									? `${searchData.count} results`
-									: totalRegistrySkills != null
-										? `${totalRegistrySkills} skills`
-										: registrySkills.length > 0
-											? `${registrySkills.length} skills`
-											: ""}
-							</span>
+								<span className="text-xs text-ink-faint">
+									{debouncedSearch && searchData
+										? `${searchData.count} results`
+										: totalRegistrySkills != null
+											? `${totalRegistrySkills} skills`
+											: registrySkills.length > 0
+												? `${registrySkills.length} skills`
+												: ""}
+								</span>
 							</div>
 
 							{isRegistryLoading && registrySkills.length === 0 && (
@@ -734,18 +784,21 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 								</div>
 							)}
 
-							{!isRegistryLoading && registrySkills.length === 0 && debouncedSearch && (
-								<div className="rounded-lg border border-app-line bg-app-box p-8 text-center">
-									<p className="text-sm text-ink-faint">
-										No skills found matching "{debouncedSearch}"
-									</p>
-								</div>
-							)}
+							{!isRegistryLoading &&
+								registrySkills.length === 0 &&
+								debouncedSearch && (
+									<div className="rounded-lg border border-app-line bg-app-box p-8 text-center">
+										<p className="text-sm text-ink-faint">
+											No skills found matching "{debouncedSearch}"
+										</p>
+									</div>
+								)}
 
 							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 								{registrySkills.map((skill) => {
 									const spec = installSpec(skill);
-									const compositeKey = `${skill.source}/${skill.name}`.toLowerCase();
+									const compositeKey =
+										`${skill.source}/${skill.name}`.toLowerCase();
 									const installedName =
 										installedKeys.get(compositeKey) ??
 										installedKeys.get(skill.name.toLowerCase());
@@ -759,9 +812,7 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 												setSelectedRegistrySkill(skill);
 												setRegistryDetailOpen(true);
 											}}
-											onInstall={() =>
-												installMutation.mutate(spec)
-											}
+											onInstall={() => installMutation.mutate(spec)}
 											onRemove={() => {
 												if (installedName) {
 													removeMutation.mutate(installedName);
@@ -791,7 +842,6 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 									</span>
 								</div>
 							)}
-
 						</div>
 					)}
 
@@ -813,7 +863,10 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 									>
 										{uploadMutation.isPending ? (
 											<>
-												<FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+												<FontAwesomeIcon
+													icon={faSpinner}
+													className="animate-spin"
+												/>
 												Uploading...
 											</>
 										) : (
@@ -828,7 +881,8 @@ export function AgentSkills({ agentId }: AgentSkillsProps) {
 
 							{uploadMutation.isError && (
 								<p className="text-xs text-red-400">
-									Failed to upload skill. Make sure the file is a valid .zip or .skill archive.
+									Failed to upload skill. Make sure the file is a valid .zip or
+									.skill archive.
 								</p>
 							)}
 							{uploadMutation.isSuccess && (

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
-import { EdgeArrowProgram } from "sigma/rendering";
+import {EdgeArrowProgram} from "sigma/rendering";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
-import { AnimatePresence, motion } from "framer-motion";
+import {AnimatePresence, motion} from "framer-motion";
 import {
 	api,
 	type AssociationItem,
@@ -12,9 +12,15 @@ import {
 	type MemoryType,
 	type RelationType,
 } from "@/api/client";
-import { formatTimeAgo } from "@/lib/format";
-import { Button, CircleButton } from "@spacedrive/primitives";
-import { Crosshair, Plus, Minus, ArrowsClockwise, X } from "@phosphor-icons/react";
+import {formatTimeAgo} from "@/lib/format";
+import {Button, CircleButton} from "@spacedrive/primitives";
+import {
+	Crosshair,
+	Plus,
+	Minus,
+	ArrowsClockwise,
+	X,
+} from "@phosphor-icons/react";
 
 // -- Constants --
 
@@ -52,7 +58,7 @@ interface NodeDetail {
 	y: number;
 }
 
-export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
+export function MemoryGraph({agentId, sort, typeFilter}: MemoryGraphProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sigmaRef = useRef<Sigma | null>(null);
 	const graphRef = useRef<Graph | null>(null);
@@ -114,7 +120,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 					return;
 				}
 
-				const graph = new Graph({ multi: false, type: "directed" });
+				const graph = new Graph({multi: false, type: "directed"});
 				graphRef.current = graph;
 
 				// Add nodes
@@ -146,7 +152,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 					renderLabels: true,
 					labelRenderedSizeThreshold: 12,
 					labelSize: 10,
-					labelColor: { color: "#999999" },
+					labelColor: {color: "#999999"},
 					defaultEdgeType: "arrow",
 					defaultEdgeColor: "#444444",
 					edgeLabelSize: 10,
@@ -154,10 +160,14 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 						arrow: EdgeArrowProgram,
 					},
 					nodeReducer: (node, data) => {
-						const res = { ...data };
+						const res = {...data};
 						if (hoveredNode && hoveredNode !== node) {
 							const graph = graphRef.current;
-							if (graph && !graph.hasEdge(hoveredNode, node) && !graph.hasEdge(node, hoveredNode)) {
+							if (
+								graph &&
+								!graph.hasEdge(hoveredNode, node) &&
+								!graph.hasEdge(node, hoveredNode)
+							) {
 								res.color = FADED_NODE_COLOR;
 								res.label = "";
 							}
@@ -165,7 +175,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 						return res;
 					},
 					edgeReducer: (_edge, data) => {
-						return { ...data };
+						return {...data};
 					},
 				});
 
@@ -214,7 +224,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 		const sigma = sigmaRef.current;
 		if (!sigma) return;
 
-		function handleClickNode({ node }: { node: string }) {
+		function handleClickNode({node}: {node: string}) {
 			const graph = graphRef.current;
 			const s = sigmaRef.current;
 			if (!graph || !s) return;
@@ -224,7 +234,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 			if (!memory) return;
 
 			// Get screen coordinates for the detail panel
-			const position = s.graphToViewport({ x: attrs.x, y: attrs.y });
+			const position = s.graphToViewport({x: attrs.x, y: attrs.y});
 			setSelectedNode({
 				memory,
 				x: position.x,
@@ -232,12 +242,18 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 			});
 		}
 
-		function handleDoubleClickNode({ node, event }: { node: string; event: { preventSigmaDefault: () => void } }) {
+		function handleDoubleClickNode({
+			node,
+			event,
+		}: {
+			node: string;
+			event: {preventSigmaDefault: () => void};
+		}) {
 			event.preventSigmaDefault();
 			expandNeighbors(node);
 		}
 
-		function handleEnterNode({ node }: { node: string }) {
+		function handleEnterNode({node}: {node: string}) {
 			setHoveredNode(node);
 			if (sigmaRef.current) {
 				sigmaRef.current.getContainer().style.cursor = "pointer";
@@ -332,7 +348,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 	return (
 		<div className="relative h-full w-full">
 			{/* Stats bar */}
-			<div className="absolute left-4 top-4 z-10 flex items-center gap-3 rounded-md bg-app-darkBox/80 px-3 py-1.5 text-tiny text-ink-faint backdrop-blur-sm">
+			<div className="absolute left-4 top-4 z-10 flex items-center gap-3 rounded-md bg-app-dark-box/80 px-3 py-1.5 text-tiny text-ink-faint backdrop-blur-sm">
 				<span>{nodeCount} nodes</span>
 				<span className="text-app-line">|</span>
 				<span>{edgeCount} edges</span>
@@ -348,34 +364,44 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 			</div>
 
 			{/* Legend */}
-			<div className="absolute bottom-4 left-4 z-10 rounded-md bg-app-darkBox/80 p-3 backdrop-blur-sm">
-				<div className="mb-2 text-tiny font-medium text-ink-faint">Node Types</div>
-				<div className="grid grid-cols-2 gap-x-4 gap-y-1">
-					{(Object.entries(NODE_COLORS) as [MemoryType, string][]).map(([type, color]) => (
-						<div key={type} className="flex items-center gap-1.5">
-							<span
-								className="inline-block h-2 w-2 rounded-full"
-								style={{ backgroundColor: color }}
-							/>
-							<span className="text-tiny text-ink-faint">{type}</span>
-						</div>
-					))}
+			<div className="absolute bottom-4 left-4 z-10 rounded-md bg-app-dark-box/80 p-3 backdrop-blur-sm">
+				<div className="mb-2 text-tiny font-medium text-ink-faint">
+					Node Types
 				</div>
-				<div className="mt-2 border-t border-app-line/30 pt-2">
-					<div className="mb-1 text-tiny font-medium text-ink-faint">Edge Types</div>
-					<div className="grid grid-cols-2 gap-x-4 gap-y-1">
-						{(Object.entries(EDGE_COLORS) as [RelationType, string][]).map(([type, color]) => (
+				<div className="grid grid-cols-2 gap-x-4 gap-y-1">
+					{(Object.entries(NODE_COLORS) as [MemoryType, string][]).map(
+						([type, color]) => (
 							<div key={type} className="flex items-center gap-1.5">
 								<span
-									className="inline-block h-0.5 w-3"
-									style={{
-										backgroundColor: color,
-										borderStyle: type === "contradicts" ? "dashed" : "solid",
-									}}
+									className="inline-block h-2 w-2 rounded-full"
+									style={{backgroundColor: color}}
 								/>
-								<span className="text-tiny text-ink-faint">{type.replace("_", " ")}</span>
+								<span className="text-tiny text-ink-faint">{type}</span>
 							</div>
-						))}
+						),
+					)}
+				</div>
+				<div className="mt-2 border-t border-app-line/30 pt-2">
+					<div className="mb-1 text-tiny font-medium text-ink-faint">
+						Edge Types
+					</div>
+					<div className="grid grid-cols-2 gap-x-4 gap-y-1">
+						{(Object.entries(EDGE_COLORS) as [RelationType, string][]).map(
+							([type, color]) => (
+								<div key={type} className="flex items-center gap-1.5">
+									<span
+										className="inline-block h-0.5 w-3"
+										style={{
+											backgroundColor: color,
+											borderStyle: type === "contradicts" ? "dashed" : "solid",
+										}}
+									/>
+									<span className="text-tiny text-ink-faint">
+										{type.replace("_", " ")}
+									</span>
+								</div>
+							),
+						)}
 					</div>
 				</div>
 				<div className="mt-2 border-t border-app-line/30 pt-2 text-tiny text-ink-faint">
@@ -394,7 +420,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 					icon={Plus}
 					onClick={() => {
 						const camera = sigmaRef.current?.getCamera();
-						if (camera) camera.animatedZoom({ duration: 200 });
+						if (camera) camera.animatedZoom({duration: 200});
 					}}
 					title="Zoom in"
 				/>
@@ -402,7 +428,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 					icon={Minus}
 					onClick={() => {
 						const camera = sigmaRef.current?.getCamera();
-						if (camera) camera.animatedUnzoom({ duration: 200 });
+						if (camera) camera.animatedUnzoom({duration: 200});
 					}}
 					title="Zoom out"
 				/>
@@ -415,7 +441,9 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 								layout.stop();
 							} else {
 								layout.start();
-								setTimeout(() => { if (layout.isRunning()) layout.stop(); }, 3000);
+								setTimeout(() => {
+									if (layout.isRunning()) layout.stop();
+								}, 3000);
 							}
 						}
 					}}
@@ -427,11 +455,11 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 			<AnimatePresence>
 				{selectedNode && (
 					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: 8 }}
-						transition={{ duration: 0.15 }}
-						className="absolute right-4 bottom-4 z-20 w-80 rounded-lg border border-app-line/50 bg-app-darkBox/95 p-4 shadow-xl backdrop-blur-sm"
+						initial={{opacity: 0, y: 8}}
+						animate={{opacity: 1, y: 0}}
+						exit={{opacity: 0, y: 8}}
+						transition={{duration: 0.15}}
+						className="absolute right-4 bottom-4 z-20 w-80 rounded-lg border border-app-line/50 bg-app-dark-box/95 p-4 shadow-xl backdrop-blur-sm"
 					>
 						<div className="mb-2 flex items-center justify-between">
 							<span
@@ -443,22 +471,26 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 							>
 								{selectedNode.memory.memory_type}
 							</span>
-						<Button
-							onClick={() => setSelectedNode(null)}
-							variant="ghost"
-							size="icon"
-							className="h-7 w-7"
-						>
-							<X className="h-3.5 w-3.5" />
-						</Button>
+							<Button
+								onClick={() => setSelectedNode(null)}
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7"
+							>
+								<X className="h-3.5 w-3.5" />
+							</Button>
 						</div>
 						<p className="mb-3 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-ink-dull">
 							{selectedNode.memory.content}
 						</p>
 						<div className="flex flex-wrap gap-x-4 gap-y-1 text-tiny text-ink-faint">
-							<span>Importance: {selectedNode.memory.importance.toFixed(2)}</span>
+							<span>
+								Importance: {selectedNode.memory.importance.toFixed(2)}
+							</span>
 							<span>Accessed: {selectedNode.memory.access_count}x</span>
-							<span>Created: {formatTimeAgo(selectedNode.memory.created_at)}</span>
+							<span>
+								Created: {formatTimeAgo(selectedNode.memory.created_at)}
+							</span>
 							{selectedNode.memory.source && (
 								<span>Source: {selectedNode.memory.source}</span>
 							)}
@@ -479,7 +511,7 @@ export function MemoryGraph({ agentId, sort, typeFilter }: MemoryGraphProps) {
 			<div
 				ref={containerRef}
 				className="h-full w-full"
-				style={{ background: "transparent" }}
+				style={{background: "transparent"}}
 			/>
 
 			{/* Loading / error / empty states */}

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {useState, useEffect} from "react";
+import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
 	api,
 	type Project,
@@ -9,10 +9,22 @@ import {
 	type CreateWorktreeRequest,
 	type UpdateProjectRequest,
 } from "@/api/client";
-import { Badge, Button, DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, Input, Label, TextArea } from "@spacedrive/primitives";
-import { formatTimeAgo } from "@/lib/format";
-import { clsx } from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
+import {
+	Badge,
+	Button,
+	DialogRoot,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+	DialogDescription,
+	Input,
+	Label,
+	TextArea,
+} from "@spacedrive/primitives";
+import {formatTimeAgo} from "@/lib/format";
+import {clsx} from "clsx";
+import {AnimatePresence, motion} from "framer-motion";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -22,7 +34,8 @@ function formatBytes(bytes: number): string {
 	if (bytes === 0) return "0 B";
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	if (bytes < 1024 * 1024 * 1024)
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
@@ -45,11 +58,11 @@ function ProjectCard({
 	return (
 		<motion.button
 			layout
-			initial={{ opacity: 0, y: 8 }}
-			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, y: -8 }}
+			initial={{opacity: 0, y: 8}}
+			animate={{opacity: 1, y: 0}}
+			exit={{opacity: 0, y: -8}}
 			onClick={onClick}
-			className="w-full cursor-pointer rounded-xl border border-app-line bg-app-darkBox p-5 text-left transition-colors hover:border-accent/30"
+			className="w-full cursor-pointer rounded-xl border border-app-line bg-app-dark-box p-5 text-left transition-colors hover:border-accent/30"
 		>
 			<div className="flex items-start justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-3">
@@ -118,10 +131,9 @@ function CreateProjectDialog({
 	const [tagsRaw, setTagsRaw] = useState("");
 
 	const createMutation = useMutation({
-		mutationFn: (request: CreateProjectRequest) =>
-			api.createProject(request),
+		mutationFn: (request: CreateProjectRequest) => api.createProject(request),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["projects"] });
+			queryClient.invalidateQueries({queryKey: ["projects"]});
 			onOpenChange(false);
 			setName("");
 			setRootPath("");
@@ -153,10 +165,10 @@ function CreateProjectDialog({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Create Project</DialogTitle>
-				<DialogDescription>
-					Register a project directory — either a single repo or a
-					directory containing multiple repos.
-				</DialogDescription>
+					<DialogDescription>
+						Register a project directory — either a single repo or a directory
+						containing multiple repos.
+					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
@@ -264,8 +276,8 @@ function EditProjectDialog({
 		mutationFn: (request: UpdateProjectRequest) =>
 			api.updateProject(project.id, request),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["project", project.id] });
-			queryClient.invalidateQueries({ queryKey: ["projects"] });
+			queryClient.invalidateQueries({queryKey: ["project", project.id]});
+			queryClient.invalidateQueries({queryKey: ["projects"]});
 			onOpenChange(false);
 		},
 	});
@@ -463,7 +475,7 @@ function CreateWorktreeDialog({
 						<select
 							value={repoId}
 							onChange={(e) => setRepoId(e.target.value)}
-							className="h-8 w-full rounded-md border border-app-line bg-app-darkBox px-3 text-sm text-ink outline-none focus:border-accent/50"
+							className="h-8 w-full rounded-md border border-app-line bg-app-dark-box px-3 text-sm text-ink outline-none focus:border-accent/50"
 						>
 							{repos.map((r) => (
 								<option key={r.id} value={r.id}>
@@ -541,11 +553,7 @@ function DeleteDialog({
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						Cancel
 					</Button>
-					<Button
-						variant="destructive"
-						onClick={onConfirm}
-						loading={isPending}
-					>
+					<Button variant="destructive" onClick={onConfirm} loading={isPending}>
 						Delete
 					</Button>
 				</DialogFooter>
@@ -582,7 +590,9 @@ function RepoCard({
 							{repo.name}
 						</h4>
 						{isSingleRepo && (
-							<Badge variant="outline" size="sm">root</Badge>
+							<Badge variant="outline" size="sm">
+								root
+							</Badge>
 						)}
 					</div>
 					<p className="mt-0.5 truncate font-mono text-[11px] text-ink-faint">
@@ -618,13 +628,20 @@ function RepoCard({
 				</div>
 			</div>
 			<div className="mt-2 flex items-center gap-3 text-xs text-ink-faint">
-				{repo.remote_url && (
-					<span className="truncate">{repo.remote_url}</span>
-				)}
-				<Badge variant={repo.current_branch && repo.current_branch !== repo.default_branch ? "accent" : "outline"} size="sm">
+				{repo.remote_url && <span className="truncate">{repo.remote_url}</span>}
+				<Badge
+					variant={
+						repo.current_branch && repo.current_branch !== repo.default_branch
+							? "accent"
+							: "outline"
+					}
+					size="sm"
+				>
 					{repo.current_branch ?? repo.default_branch}
 				</Badge>
-				<span>{worktreeCount} worktree{worktreeCount !== 1 ? "s" : ""}</span>
+				<span>
+					{worktreeCount} worktree{worktreeCount !== 1 ? "s" : ""}
+				</span>
 				{repo.disk_usage_bytes != null && (
 					<span className="ml-auto shrink-0 font-mono">
 						{formatBytes(repo.disk_usage_bytes)}
@@ -720,7 +737,7 @@ function ProjectDetail({
 }) {
 	const queryClient = useQueryClient();
 
-	const { data: project, isLoading } = useQuery({
+	const {data: project, isLoading} = useQuery({
 		queryKey: ["project", projectId],
 		queryFn: () => api.getProject(projectId),
 		refetchInterval: 10_000,
@@ -738,14 +755,13 @@ function ProjectDetail({
 	const deleteProjectMutation = useMutation({
 		mutationFn: () => api.deleteProject(projectId),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["projects"] });
+			queryClient.invalidateQueries({queryKey: ["projects"]});
 			onBack();
 		},
 	});
 
 	const deleteRepoMutation = useMutation({
-		mutationFn: (repoId: string) =>
-			api.deleteProjectRepo(projectId, repoId),
+		mutationFn: (repoId: string) => api.deleteProjectRepo(projectId, repoId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: ["project", projectId],
@@ -767,9 +783,13 @@ function ProjectDetail({
 	const [showDeleteProject, setShowDeleteProject] = useState(false);
 	const [showEditProject, setShowEditProject] = useState(false);
 	const [deleteRepoTarget, setDeleteRepoTarget] = useState<string | null>(null);
-	const [deleteWorktreeTarget, setDeleteWorktreeTarget] = useState<string | null>(null);
+	const [deleteWorktreeTarget, setDeleteWorktreeTarget] = useState<
+		string | null
+	>(null);
 	// Track which repo's "Add Worktree" was clicked to pre-select in dialog
-	const [worktreeRepoPreselect, setWorktreeRepoPreselect] = useState<string | null>(null);
+	const [worktreeRepoPreselect, setWorktreeRepoPreselect] = useState<
+		string | null
+	>(null);
 
 	if (isLoading) {
 		return (
@@ -829,9 +849,7 @@ function ProjectDetail({
 						<div className="min-w-0 flex-1">
 							<div className="flex items-center gap-3">
 								{project.icon ? (
-									<span className="text-2xl leading-none">
-										{project.icon}
-									</span>
+									<span className="text-2xl leading-none">{project.icon}</span>
 								) : (
 									<span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-base font-semibold text-accent">
 										{project.name.charAt(0).toUpperCase()}
@@ -851,9 +869,7 @@ function ProjectDetail({
 
 							<div className="mt-3 flex flex-wrap items-center gap-2">
 								<Badge
-									variant={
-										project.status === "active" ? "green" : "default"
-									}
+									variant={project.status === "active" ? "green" : "default"}
 									size="sm"
 								>
 									{project.status}
@@ -938,9 +954,7 @@ function ProjectDetail({
 					<div className="mb-3 flex items-center justify-between">
 						<h3 className="font-plex text-sm font-semibold text-ink">
 							Worktrees
-							<span className="ml-2 text-ink-faint">
-								({worktrees.length})
-							</span>
+							<span className="ml-2 text-ink-faint">({worktrees.length})</span>
 						</h3>
 						<Button
 							variant="outline"
@@ -989,9 +1003,7 @@ function ProjectDetail({
 						worktreeRepoPreselect
 							? [
 									repos.find((r) => r.id === worktreeRepoPreselect)!,
-									...repos.filter(
-										(r) => r.id !== worktreeRepoPreselect,
-									),
+									...repos.filter((r) => r.id !== worktreeRepoPreselect),
 								]
 							: repos
 					}
@@ -1058,7 +1070,7 @@ export function AgentProjects() {
 	);
 	const [showCreate, setShowCreate] = useState(false);
 
-	const { data, isLoading } = useQuery({
+	const {data, isLoading} = useQuery({
 		queryKey: ["projects"],
 		queryFn: () => api.listProjects(),
 		refetchInterval: 15_000,
@@ -1125,10 +1137,7 @@ export function AgentProjects() {
 				)}
 			</div>
 
-			<CreateProjectDialog
-				open={showCreate}
-				onOpenChange={setShowCreate}
-			/>
+			<CreateProjectDialog open={showCreate} onOpenChange={setShowCreate} />
 		</div>
 	);
 }

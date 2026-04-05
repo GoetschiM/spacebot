@@ -1,13 +1,9 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-	api,
-	type CortexEvent,
-	type CortexEventType,
-} from "@/api/client";
-import { formatTimeAgo } from "@/lib/format";
-import { FilterButton } from "@spacedrive/primitives";
+import {useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {AnimatePresence, motion} from "framer-motion";
+import {api, type CortexEvent, type CortexEventType} from "@/api/client";
+import {formatTimeAgo} from "@/lib/format";
+import {FilterButton} from "@spacedrive/primitives";
 
 const PAGE_SIZE = 50;
 
@@ -28,24 +24,50 @@ const EVENT_CATEGORY_COLORS: Record<string, string> = {
 };
 
 /** Groups for the filter pills — reduces clutter vs showing all 13 types. */
-const FILTER_GROUPS: { label: string; types: CortexEventType[] }[] = [
-	{ label: "Bulletin", types: ["bulletin_generated", "bulletin_failed"] },
-	{ label: "Maintenance", types: ["maintenance_run", "memory_merged", "memory_decayed", "memory_pruned"] },
-	{ label: "Health", types: ["worker_killed", "branch_killed", "circuit_breaker_tripped", "health_check"] },
-	{ label: "Consolidation", types: ["association_created", "contradiction_flagged", "observation_created"] },
+const FILTER_GROUPS: {label: string; types: CortexEventType[]}[] = [
+	{label: "Bulletin", types: ["bulletin_generated", "bulletin_failed"]},
+	{
+		label: "Maintenance",
+		types: [
+			"maintenance_run",
+			"memory_merged",
+			"memory_decayed",
+			"memory_pruned",
+		],
+	},
+	{
+		label: "Health",
+		types: [
+			"worker_killed",
+			"branch_killed",
+			"circuit_breaker_tripped",
+			"health_check",
+		],
+	},
+	{
+		label: "Consolidation",
+		types: [
+			"association_created",
+			"contradiction_flagged",
+			"observation_created",
+		],
+	},
 ];
 
-function EventTypeBadge({ eventType }: { eventType: string }) {
-	const color = EVENT_CATEGORY_COLORS[eventType] ?? "bg-app-darkBox text-ink-faint";
+function EventTypeBadge({eventType}: {eventType: string}) {
+	const color =
+		EVENT_CATEGORY_COLORS[eventType] ?? "bg-app-dark-box text-ink-faint";
 	const label = eventType.replace(/_/g, " ");
 	return (
-		<span className={`inline-flex items-center rounded px-1.5 py-0.5 text-tiny font-medium ${color}`}>
+		<span
+			className={`inline-flex items-center rounded px-1.5 py-0.5 text-tiny font-medium ${color}`}
+		>
 			{label}
 		</span>
 	);
 }
 
-function DetailsPanel({ details }: { details: Record<string, unknown> }) {
+function DetailsPanel({details}: {details: Record<string, unknown>}) {
 	return (
 		<div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-tiny">
 			{Object.entries(details).map(([key, value]) => (
@@ -64,7 +86,7 @@ interface AgentCortexProps {
 	agentId: string;
 }
 
-export function AgentCortex({ agentId }: AgentCortexProps) {
+export function AgentCortex({agentId}: AgentCortexProps) {
 	const [typeFilter, setTypeFilter] = useState<CortexEventType | null>(null);
 	const [groupFilter, setGroupFilter] = useState<string | null>(null);
 	const [offset, setOffset] = useState(0);
@@ -73,11 +95,11 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 	// Determine actual event_type filter from group or individual selection
 	// For groups, we pass no event_type and filter client-side (API only supports single type)
 	const activeGroupTypes = groupFilter
-		? FILTER_GROUPS.find((g) => g.label === groupFilter)?.types ?? []
+		? (FILTER_GROUPS.find((g) => g.label === groupFilter)?.types ?? [])
 		: [];
 	const isGroupFiltering = activeGroupTypes.length > 0;
 
-	const { data, isLoading, isError } = useQuery({
+	const {data, isLoading, isError} = useQuery({
 		queryKey: ["cortex-events", agentId, typeFilter, offset],
 		queryFn: () =>
 			api.cortexEvents(agentId, {
@@ -93,7 +115,9 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 	let total = data?.total ?? 0;
 
 	if (isGroupFiltering) {
-		events = events.filter((event) => activeGroupTypes.includes(event.event_type));
+		events = events.filter((event) =>
+			activeGroupTypes.includes(event.event_type),
+		);
 		total = events.length;
 		events = events.slice(offset, offset + PAGE_SIZE);
 	}
@@ -101,7 +125,10 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 	const hasNext = offset + PAGE_SIZE < total;
 	const hasPrev = offset > 0;
 
-	const handleFilterChange = (group: string | null, type_: CortexEventType | null) => {
+	const handleFilterChange = (
+		group: string | null,
+		type_: CortexEventType | null,
+	) => {
 		setGroupFilter(group);
 		setTypeFilter(type_);
 		setOffset(0);
@@ -111,7 +138,7 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 	return (
 		<div className="flex h-full flex-col overflow-hidden">
 			{/* Filter bar */}
-			<div className="flex items-center gap-1.5 border-b border-app-line/50 bg-app-darkBox/20 px-6 py-2">
+			<div className="flex items-center gap-1.5 border-b border-app-line/50 bg-app-dark-box/20 px-6 py-2">
 				<button
 					onClick={() => handleFilterChange(null, null)}
 					className={`rounded-md px-2 py-1 text-tiny font-medium transition-colors ${
@@ -181,7 +208,9 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 			) : events.length === 0 ? (
 				<div className="flex flex-1 items-center justify-center">
 					<p className="text-sm text-ink-faint">
-						{typeFilter || groupFilter ? "No events match this filter" : "No cortex events yet"}
+						{typeFilter || groupFilter
+							? "No events match this filter"
+							: "No cortex events yet"}
 					</p>
 				</div>
 			) : (
@@ -193,7 +222,7 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 								<div key={event.id} className="border-b border-app-line/30">
 									<button
 										onClick={() => setExpandedId(isExpanded ? null : event.id)}
-										className="flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-app-darkBox/30"
+										className="flex w-full items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-app-dark-box/30"
 									>
 										<span className="w-20 flex-shrink-0 text-tiny text-ink-faint">
 											{formatTimeAgo(event.created_at)}
@@ -212,13 +241,17 @@ export function AgentCortex({ agentId }: AgentCortexProps) {
 									<AnimatePresence>
 										{isExpanded && event.details && (
 											<motion.div
-												initial={{ height: 0, opacity: 0 }}
-												animate={{ height: "auto", opacity: 1 }}
-												exit={{ height: 0, opacity: 0 }}
-												transition={{ type: "spring", stiffness: 500, damping: 35 }}
+												initial={{height: 0, opacity: 0}}
+												animate={{height: "auto", opacity: 1}}
+												exit={{height: 0, opacity: 0}}
+												transition={{
+													type: "spring",
+													stiffness: 500,
+													damping: 35,
+												}}
 												className="overflow-hidden"
 											>
-												<div className="border-t border-app-line/20 bg-app-darkBox/20 px-6 py-4">
+												<div className="border-t border-app-line/20 bg-app-dark-box/20 px-6 py-4">
 													<DetailsPanel details={event.details} />
 												</div>
 											</motion.div>

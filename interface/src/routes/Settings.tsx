@@ -1,21 +1,58 @@
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type GlobalSettingsResponse, type UpdateStatus, type SecretCategory, type SecretListItem, type StoreState } from "@/api/client";
-import { Badge, Button, Input, DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@spacedrive/primitives";
-import { SettingSidebarButton } from "@/ui/SettingSidebarButton";
-import { Switch } from "@spacedrive/primitives";
-import { useSearch, useNavigate } from "@tanstack/react-router";
-import { PlatformCatalog, InstanceCard, AddInstanceCard } from "@/components/ChannelSettingCard";
-import { ModelSelect } from "@/components/ModelSelect";
-import { ProviderIcon } from "@/lib/providerIcons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import {useState, useEffect, useRef} from "react";
+import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
+import {
+	api,
+	type GlobalSettingsResponse,
+	type UpdateStatus,
+	type SecretCategory,
+	type SecretListItem,
+	type StoreState,
+} from "@/api/client";
+import {
+	Badge,
+	Button,
+	Input,
+	DialogRoot,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	SelectRoot,
+	SelectTrigger,
+	SelectValue,
+	SelectContent,
+	SelectItem,
+} from "@spacedrive/primitives";
+import {SettingSidebarButton} from "@/ui/SettingSidebarButton";
+import {Switch} from "@spacedrive/primitives";
+import {useSearch, useNavigate} from "@tanstack/react-router";
+import {
+	PlatformCatalog,
+	InstanceCard,
+	AddInstanceCard,
+} from "@/components/ChannelSettingCard";
+import {ModelSelect} from "@/components/ModelSelect";
+import {ProviderIcon} from "@/lib/providerIcons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faSearch} from "@fortawesome/free-solid-svg-icons";
 
-import { parse as parseToml } from "smol-toml";
-import { useTheme, THEMES, type ThemeId } from "@/hooks/useTheme";
-import { Markdown } from "@/components/Markdown";
+import {parse as parseToml} from "smol-toml";
+import {useTheme, THEMES, type ThemeId} from "@/hooks/useTheme";
+import {Markdown} from "@/components/Markdown";
 
-type SectionId = "appearance" | "providers" | "channels" | "api-keys" | "secrets" | "server" | "opencode" | "worker-logs" | "updates" | "config-file" | "changelog";
+type SectionId =
+	| "appearance"
+	| "providers"
+	| "channels"
+	| "api-keys"
+	| "secrets"
+	| "server"
+	| "opencode"
+	| "worker-logs"
+	| "updates"
+	| "config-file"
+	| "changelog";
 
 const SECTIONS = [
 	{
@@ -275,19 +312,19 @@ const CHATGPT_OAUTH_DEFAULT_MODEL = "openai-chatgpt/gpt-5.3-codex";
 export function Settings() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const search = useSearch({ from: "/settings" }) as { tab?: string };
+	const search = useSearch({from: "/settings"}) as {tab?: string};
 	const [activeSection, setActiveSection] = useState<SectionId>("providers");
 
 	// Sync activeSection with URL search param
 	useEffect(() => {
-		if (search.tab && SECTIONS.some(s => s.id === search.tab)) {
+		if (search.tab && SECTIONS.some((s) => s.id === search.tab)) {
 			setActiveSection(search.tab as SectionId);
 		}
 	}, [search.tab]);
 
 	const handleSectionChange = (section: SectionId) => {
 		setActiveSection(section);
-		navigate({ to: "/settings", search: { tab: section } });
+		navigate({to: "/settings", search: {tab: section}});
 	};
 	const [editingProvider, setEditingProvider] = useState<string | null>(null);
 	const [keyInput, setKeyInput] = useState("");
@@ -298,7 +335,8 @@ export function Settings() {
 		message: string;
 		sample?: string | null;
 	} | null>(null);
-	const [isPollingOpenAiBrowserOAuth, setIsPollingOpenAiBrowserOAuth] = useState(false);
+	const [isPollingOpenAiBrowserOAuth, setIsPollingOpenAiBrowserOAuth] =
+		useState(false);
 	const [openAiBrowserOAuthMessage, setOpenAiBrowserOAuthMessage] = useState<{
 		text: string;
 		type: "success" | "error";
@@ -320,7 +358,7 @@ export function Settings() {
 	const fetchAbortControllerRef = useRef<AbortController | null>(null);
 
 	// Fetch providers data (only when on providers tab)
-	const { data, isLoading } = useQuery({
+	const {data, isLoading} = useQuery({
 		queryKey: ["providers"],
 		queryFn: api.providers,
 		staleTime: 5_000,
@@ -328,16 +366,41 @@ export function Settings() {
 	});
 
 	// Fetch global settings (only when on api-keys, server, or worker-logs tabs)
-	const { data: globalSettings, isLoading: globalSettingsLoading } = useQuery({
+	const {data: globalSettings, isLoading: globalSettingsLoading} = useQuery({
 		queryKey: ["global-settings"],
 		queryFn: api.globalSettings,
 		staleTime: 5_000,
-		enabled: activeSection === "api-keys" || activeSection === "server" || activeSection === "opencode" || activeSection === "worker-logs",
+		enabled:
+			activeSection === "api-keys" ||
+			activeSection === "server" ||
+			activeSection === "opencode" ||
+			activeSection === "worker-logs",
 	});
 
 	const updateMutation = useMutation({
-		mutationFn: ({ provider, apiKey, model, baseUrl, apiVersion, deployment }: { provider: string; apiKey: string; model: string; baseUrl?: string; apiVersion?: string; deployment?: string }) =>
-			api.updateProvider(provider, apiKey, model, baseUrl, apiVersion, deployment),
+		mutationFn: ({
+			provider,
+			apiKey,
+			model,
+			baseUrl,
+			apiVersion,
+			deployment,
+		}: {
+			provider: string;
+			apiKey: string;
+			model: string;
+			baseUrl?: string;
+			apiVersion?: string;
+			deployment?: string;
+		}) =>
+			api.updateProvider(
+				provider,
+				apiKey,
+				model,
+				baseUrl,
+				apiVersion,
+				deployment,
+			),
 		onSuccess: (result) => {
 			if (result.success) {
 				setEditingProvider(null);
@@ -345,48 +408,64 @@ export function Settings() {
 				setModelInput("");
 				setTestedSignature(null);
 				setTestResult(null);
-				setMessage({ text: result.message, type: "success" });
-				queryClient.invalidateQueries({ queryKey: ["providers"] });
+				setMessage({text: result.message, type: "success"});
+				queryClient.invalidateQueries({queryKey: ["providers"]});
 				// Agents will auto-start on the backend, refetch agent list after a short delay
 				setTimeout(() => {
-					queryClient.invalidateQueries({ queryKey: ["agents"] });
-					queryClient.invalidateQueries({ queryKey: ["overview"] });
+					queryClient.invalidateQueries({queryKey: ["agents"]});
+					queryClient.invalidateQueries({queryKey: ["overview"]});
 				}, 3000);
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
 	const testModelMutation = useMutation({
-		mutationFn: ({ provider, apiKey, model, baseUrl, apiVersion, deployment }: {
+		mutationFn: ({
+			provider,
+			apiKey,
+			model,
+			baseUrl,
+			apiVersion,
+			deployment,
+		}: {
 			provider: string;
 			apiKey: string;
 			model: string;
 			baseUrl?: string;
 			apiVersion?: string;
 			deployment?: string;
-		}) => api.testProviderModel(provider, apiKey, model, baseUrl, apiVersion, deployment),
+		}) =>
+			api.testProviderModel(
+				provider,
+				apiKey,
+				model,
+				baseUrl,
+				apiVersion,
+				deployment,
+			),
 	});
 	const startOpenAiBrowserOAuthMutation = useMutation({
-		mutationFn: (params: { model: string }) => api.startOpenAiOAuthBrowser(params),
+		mutationFn: (params: {model: string}) =>
+			api.startOpenAiOAuthBrowser(params),
 	});
 
 	const removeMutation = useMutation({
 		mutationFn: (provider: string) => api.removeProvider(provider),
 		onSuccess: (result) => {
 			if (result.success) {
-				setMessage({ text: result.message, type: "success" });
-				queryClient.invalidateQueries({ queryKey: ["providers"] });
+				setMessage({text: result.message, type: "success"});
+				queryClient.invalidateQueries({queryKey: ["providers"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -402,24 +481,40 @@ export function Settings() {
 
 		if (editingProvider === "azure") {
 			if (!keyInput.trim()) {
-				setTestResult({ success: false, message: "API key is required for Azure OpenAI" });
+				setTestResult({
+					success: false,
+					message: "API key is required for Azure OpenAI",
+				});
 				return false;
 			}
 			if (!azureBaseUrl.trim()) {
-				setTestResult({ success: false, message: "Base URL is required for Azure OpenAI" });
+				setTestResult({
+					success: false,
+					message: "Base URL is required for Azure OpenAI",
+				});
 				return false;
 			}
 			if (!azureApiVersion.trim()) {
-				setTestResult({ success: false, message: "API Version is required for Azure OpenAI" });
+				setTestResult({
+					success: false,
+					message: "API Version is required for Azure OpenAI",
+				});
 				return false;
 			}
 			if (!azureDeployment.trim()) {
-				setTestResult({ success: false, message: "Deployment Name is required for Azure OpenAI" });
+				setTestResult({
+					success: false,
+					message: "Deployment Name is required for Azure OpenAI",
+				});
 				return false;
 			}
-			const normalizedBaseUrl = azureBaseUrl.trim().replace(/\/+$/, '');
+			const normalizedBaseUrl = azureBaseUrl.trim().replace(/\/+$/, "");
 			if (!normalizedBaseUrl.endsWith(".openai.azure.com")) {
-				setTestResult({ success: false, message: "Base URL must end with '.openai.azure.com' (e.g., https://{resource-name}.openai.azure.com)" });
+				setTestResult({
+					success: false,
+					message:
+						"Base URL must end with '.openai.azure.com' (e.g., https://{resource-name}.openai.azure.com)",
+				});
 				return false;
 			}
 		}
@@ -427,16 +522,28 @@ export function Settings() {
 		setMessage(null);
 		setTestResult(null);
 		try {
-			const azureModel = editingProvider === "azure" ? `azure/${azureDeployment.trim()}` : modelInput.trim();
+			const azureModel =
+				editingProvider === "azure"
+					? `azure/${azureDeployment.trim()}`
+					: modelInput.trim();
 			const result = await testModelMutation.mutateAsync({
 				provider: editingProvider,
 				apiKey: keyInput.trim(),
 				model: azureModel,
-				baseUrl: editingProvider === "azure" ? azureBaseUrl.trim().replace(/\/+$/, '') : undefined,
-				apiVersion: editingProvider === "azure" ? azureApiVersion.trim() : undefined,
-				deployment: editingProvider === "azure" ? azureDeployment.trim() : undefined,
+				baseUrl:
+					editingProvider === "azure"
+						? azureBaseUrl.trim().replace(/\/+$/, "")
+						: undefined,
+				apiVersion:
+					editingProvider === "azure" ? azureApiVersion.trim() : undefined,
+				deployment:
+					editingProvider === "azure" ? azureDeployment.trim() : undefined,
 			});
-			setTestResult({ success: result.success, message: result.message, sample: result.sample });
+			setTestResult({
+				success: result.success,
+				message: result.message,
+				sample: result.sample,
+			});
 			if (result.success) {
 				setTestedSignature(currentSignature);
 				return true;
@@ -445,7 +552,7 @@ export function Settings() {
 				return false;
 			}
 		} catch (error: any) {
-			setTestResult({ success: false, message: `Failed: ${error.message}` });
+			setTestResult({success: false, message: `Failed: ${error.message}`});
 			setTestedSignature(null);
 			return false;
 		}
@@ -456,24 +563,39 @@ export function Settings() {
 
 		if (editingProvider === "azure") {
 			if (!keyInput.trim()) {
-				setMessage({ text: "API key is required for Azure OpenAI", type: "error" });
+				setMessage({
+					text: "API key is required for Azure OpenAI",
+					type: "error",
+				});
 				return;
 			}
 			if (!azureBaseUrl.trim()) {
-				setMessage({ text: "Base URL is required for Azure OpenAI", type: "error" });
+				setMessage({
+					text: "Base URL is required for Azure OpenAI",
+					type: "error",
+				});
 				return;
 			}
 			if (!azureApiVersion.trim()) {
-				setMessage({ text: "API Version is required for Azure OpenAI", type: "error" });
+				setMessage({
+					text: "API Version is required for Azure OpenAI",
+					type: "error",
+				});
 				return;
 			}
 			if (!azureDeployment.trim()) {
-				setMessage({ text: "Deployment Name is required for Azure OpenAI", type: "error" });
+				setMessage({
+					text: "Deployment Name is required for Azure OpenAI",
+					type: "error",
+				});
 				return;
 			}
-			const normalizedBaseUrl = azureBaseUrl.trim().replace(/\/+$/, '');
+			const normalizedBaseUrl = azureBaseUrl.trim().replace(/\/+$/, "");
 			if (!normalizedBaseUrl.endsWith(".openai.azure.com")) {
-				setMessage({ text: "Base URL must end with '.openai.azure.com'", type: "error" });
+				setMessage({
+					text: "Base URL must end with '.openai.azure.com'",
+					type: "error",
+				});
 				return;
 			}
 		}
@@ -489,7 +611,7 @@ export function Settings() {
 				provider: editingProvider,
 				apiKey: keyInput.trim(),
 				model: azureModel,
-				baseUrl: azureBaseUrl.trim().replace(/\/+$/, ''),
+				baseUrl: azureBaseUrl.trim().replace(/\/+$/, ""),
 				apiVersion: azureApiVersion.trim(),
 				deployment: azureDeployment.trim(),
 			});
@@ -502,7 +624,10 @@ export function Settings() {
 		}
 	};
 
-	const monitorOpenAiBrowserOAuth = async (stateToken: string, signal: AbortSignal) => {
+	const monitorOpenAiBrowserOAuth = async (
+		stateToken: string,
+		signal: AbortSignal,
+	) => {
 		setIsPollingOpenAiBrowserOAuth(true);
 		setOpenAiBrowserOAuthMessage(null);
 		try {
@@ -540,7 +665,7 @@ export function Settings() {
 						signal.removeEventListener("abort", onAbort);
 						resolve(undefined);
 					}, 2000);
-					signal.addEventListener("abort", onAbort, { once: true });
+					signal.addEventListener("abort", onAbort, {once: true});
 				});
 			}
 			if (signal.aborted) return;
@@ -571,7 +696,12 @@ export function Settings() {
 			const result = await startOpenAiBrowserOAuthMutation.mutateAsync({
 				model: CHATGPT_OAUTH_DEFAULT_MODEL,
 			});
-			if (!result.success || !result.user_code || !result.verification_url || !result.state) {
+			if (
+				!result.success ||
+				!result.user_code ||
+				!result.verification_url ||
+				!result.state
+			) {
 				setOpenAiBrowserOAuthMessage({
 					text: result.message || "Failed to start device sign-in",
 					type: "error",
@@ -589,7 +719,10 @@ export function Settings() {
 			});
 			void monitorOpenAiBrowserOAuth(result.state, abort.signal);
 		} catch (error: any) {
-			setOpenAiBrowserOAuthMessage({text: `Failed: ${error.message}`, type: "error"});
+			setOpenAiBrowserOAuthMessage({
+				text: `Failed: ${error.message}`,
+				type: "error",
+			});
 		}
 	};
 
@@ -658,14 +791,17 @@ export function Settings() {
 
 	const isConfigured = (providerId: string): boolean => {
 		if (!data) return false;
-		const statusKey = providerId.replace(/-/g, "_") as keyof typeof data.providers;
+		const statusKey = providerId.replace(
+			/-/g,
+			"_",
+		) as keyof typeof data.providers;
 		return data.providers[statusKey] ?? false;
 	};
 
 	return (
 		<div className="flex h-full min-h-0 overflow-hidden">
 			{/* Sidebar */}
-			<div className="flex min-h-0 w-52 flex-shrink-0 flex-col overflow-y-auto border-r border-app-line/50 bg-app-darkBox/20">
+			<div className="flex min-h-0 w-52 flex-shrink-0 flex-col overflow-y-auto border-r border-app-line/50 bg-app-dark-box/20">
 				<div className="px-3 pb-1 pt-4">
 					<span className="text-tiny font-medium uppercase tracking-wider text-ink-faint">
 						Settings
@@ -697,15 +833,16 @@ export function Settings() {
 									LLM Providers
 								</h2>
 								<p className="mt-1 text-sm text-ink-dull">
-									Configure credentials/endpoints for LLM providers. At least one provider is
-									required for agents to function.
+									Configure credentials/endpoints for LLM providers. At least
+									one provider is required for agents to function.
 								</p>
 							</div>
 
-							<div className="mb-4 rounded-md border border-app-line bg-app-darkBox/20 px-4 py-3">
+							<div className="mb-4 rounded-md border border-app-line bg-app-dark-box/20 px-4 py-3">
 								<p className="text-sm text-ink-faint">
-									When you add a provider, choose a model and run a completion test before saving.
-									Saving applies that model to all five default routing roles and to your default agent.
+									When you add a provider, choose a model and run a completion
+									test before saving. Saving applies that model to all five
+									default routing roles and to your default agent.
 								</p>
 							</div>
 
@@ -716,80 +853,84 @@ export function Settings() {
 								</div>
 							) : (
 								<div className="flex flex-col gap-3">
-									{PROVIDERS.map((provider) => (
-										[
+									{PROVIDERS.map((provider) => [
+										<ProviderCard
+											key={provider.id}
+											provider={provider.id}
+											name={provider.name}
+											description={provider.description}
+											configured={isConfigured(provider.id)}
+											defaultModel={provider.defaultModel}
+											onEdit={() => {
+												setEditingProvider(provider.id);
+												setKeyInput("");
+												setModelInput(provider.defaultModel ?? "");
+												setTestedSignature(null);
+												setTestResult(null);
+												setMessage(null);
+												if (provider.id === "azure") {
+													// Reset Azure fields before hydrating
+													setAzureBaseUrl("");
+													setAzureApiVersion("");
+													setAzureDeployment("");
+
+													// Cancel previous request
+													fetchAbortControllerRef.current?.abort();
+
+													// Create new abort controller
+													const abortController = new AbortController();
+													fetchAbortControllerRef.current = abortController;
+
+													api
+														.getProviderConfig("azure", {
+															signal: abortController.signal,
+														})
+														.then((result) => {
+															// Check if aborted
+															if (abortController.signal.aborted) return;
+															if (!result.success) return;
+
+															setAzureBaseUrl(result.base_url ?? "");
+															setAzureApiVersion(result.api_version ?? "");
+															const deployment = result.deployment ?? "";
+															setAzureDeployment(deployment);
+															if (deployment) {
+																setModelInput(`azure/${deployment}`);
+															}
+														})
+														.catch((error) => {
+															if (error.name === "AbortError") return;
+															console.error(
+																"Failed to fetch Azure config:",
+																error,
+															);
+														});
+												}
+											}}
+											onRemove={() => removeMutation.mutate(provider.id)}
+											removing={removeMutation.isPending}
+										/>,
+										provider.id === "openai" ? (
 											<ProviderCard
-												key={provider.id}
-												provider={provider.id}
-												name={provider.name}
-												description={provider.description}
-												configured={isConfigured(provider.id)}
-												defaultModel={provider.defaultModel}
-												onEdit={() => {
-													setEditingProvider(provider.id);
-													setKeyInput("");
-													setModelInput(provider.defaultModel ?? "");
-													setTestedSignature(null);
-													setTestResult(null);
-													setMessage(null);
-													if (provider.id === "azure") {
-														// Reset Azure fields before hydrating
-														setAzureBaseUrl("");
-														setAzureApiVersion("");
-														setAzureDeployment("");
-
-														// Cancel previous request
-														fetchAbortControllerRef.current?.abort();
-
-														// Create new abort controller
-														const abortController = new AbortController();
-														fetchAbortControllerRef.current = abortController;
-
-														api.getProviderConfig("azure", { signal: abortController.signal })
-															.then((result) => {
-																// Check if aborted
-																if (abortController.signal.aborted) return;
-																if (!result.success) return;
-
-																setAzureBaseUrl(result.base_url ?? "");
-																setAzureApiVersion(result.api_version ?? "");
-																const deployment = result.deployment ?? "";
-																setAzureDeployment(deployment);
-																if (deployment) {
-																	setModelInput(`azure/${deployment}`);
-																}
-															})
-															.catch((error) => {
-																if (error.name === 'AbortError') return;
-																console.error("Failed to fetch Azure config:", error);
-															});
-													}
-												}}
-												onRemove={() => removeMutation.mutate(provider.id)}
+												key="openai-chatgpt"
+												provider="openai-chatgpt"
+												name="ChatGPT Plus (OAuth)"
+												description="Sign in with your ChatGPT Plus account using a device code."
+												configured={isConfigured("openai-chatgpt")}
+												defaultModel={CHATGPT_OAUTH_DEFAULT_MODEL}
+												onEdit={() => setOpenAiOAuthDialogOpen(true)}
+												onRemove={() => removeMutation.mutate("openai-chatgpt")}
 												removing={removeMutation.isPending}
-											/>,
-											provider.id === "openai" ? (
-												<ProviderCard
-													key="openai-chatgpt"
-													provider="openai-chatgpt"
-													name="ChatGPT Plus (OAuth)"
-													description="Sign in with your ChatGPT Plus account using a device code."
-													configured={isConfigured("openai-chatgpt")}
-													defaultModel={CHATGPT_OAUTH_DEFAULT_MODEL}
-													onEdit={() => setOpenAiOAuthDialogOpen(true)}
-													onRemove={() => removeMutation.mutate("openai-chatgpt")}
-													removing={removeMutation.isPending}
-													actionLabel="Sign in"
-													showRemove={isConfigured("openai-chatgpt")}
-												/>
-											) : null,
-										]
-									))}
+												actionLabel="Sign in"
+												showRemove={isConfigured("openai-chatgpt")}
+											/>
+										) : null,
+									])}
 								</div>
 							)}
 
 							{/* Info note */}
-							<div className="mt-6 rounded-md border border-app-line bg-app-darkBox/20 px-4 py-3">
+							<div className="mt-6 rounded-md border border-app-line bg-app-dark-box/20 px-4 py-3">
 								<p className="text-sm text-ink-faint">
 									Provider values are written to{" "}
 									<code className="rounded bg-app-box px-1 py-0.5 text-tiny text-ink-dull">
@@ -820,15 +961,27 @@ export function Settings() {
 					) : activeSection === "channels" ? (
 						<ChannelsSection />
 					) : activeSection === "api-keys" ? (
-						<ApiKeysSection settings={globalSettings} isLoading={globalSettingsLoading} />
+						<ApiKeysSection
+							settings={globalSettings}
+							isLoading={globalSettingsLoading}
+						/>
 					) : activeSection === "secrets" ? (
 						<SecretsSection />
 					) : activeSection === "server" ? (
-						<ServerSection settings={globalSettings} isLoading={globalSettingsLoading} />
+						<ServerSection
+							settings={globalSettings}
+							isLoading={globalSettingsLoading}
+						/>
 					) : activeSection === "opencode" ? (
-						<OpenCodeSection settings={globalSettings} isLoading={globalSettingsLoading} />
+						<OpenCodeSection
+							settings={globalSettings}
+							isLoading={globalSettingsLoading}
+						/>
 					) : activeSection === "worker-logs" ? (
-						<WorkerLogsSection settings={globalSettings} isLoading={globalSettingsLoading} />
+						<WorkerLogsSection
+							settings={globalSettings}
+							isLoading={globalSettingsLoading}
+						/>
 					) : activeSection === "updates" ? (
 						<UpdatesSection />
 					) : activeSection === "config-file" ? (
@@ -839,21 +992,28 @@ export function Settings() {
 				</div>
 			</div>
 
-			<DialogRoot open={!!editingProvider} onOpenChange={(open) => { if (!open) handleClose(); }}>
+			<DialogRoot
+				open={!!editingProvider}
+				onOpenChange={(open) => {
+					if (!open) handleClose();
+				}}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>
 							{isConfigured(editingProvider ?? "") ? "Update" : "Add"}{" "}
-							{editingProvider === "ollama" || editingProvider === "azure" ? "Endpoint" : "API Key"}
+							{editingProvider === "ollama" || editingProvider === "azure"
+								? "Endpoint"
+								: "API Key"}
 						</DialogTitle>
 						<DialogDescription>
 							{editingProvider === "ollama"
 								? `Enter your ${editingProviderData?.name} base URL. It will be saved to your instance config.`
 								: editingProvider === "azure"
 									? "Enter your Azure OpenAI configuration. API key, base URL, API version, and deployment name are required."
-								: editingProvider === "openai"
-									? "Enter an OpenAI API key. The model below will be applied to routing."
-								: `Enter your ${editingProviderData?.name} API key. It will be saved to your instance config.`}
+									: editingProvider === "openai"
+										? "Enter an OpenAI API key. The model below will be applied to routing."
+										: `Enter your ${editingProviderData?.name} API key. It will be saved to your instance config.`}
 						</DialogDescription>
 					</DialogHeader>
 					{editingProvider === "azure" ? (
@@ -890,7 +1050,9 @@ export function Settings() {
 								</p>
 							</div>
 							<div className="space-y-1.5 mt-3">
-								<label className="text-sm font-medium text-ink">API Version</label>
+								<label className="text-sm font-medium text-ink">
+									API Version
+								</label>
 								<Input
 									type="text"
 									value={azureApiVersion}
@@ -908,7 +1070,9 @@ export function Settings() {
 								</p>
 							</div>
 							<div className="space-y-1.5 mt-3">
-								<label className="text-sm font-medium text-ink">Deployment Name</label>
+								<label className="text-sm font-medium text-ink">
+									Deployment Name
+								</label>
 								<Input
 									type="text"
 									value={azureDeployment}
@@ -931,7 +1095,7 @@ export function Settings() {
 									type="text"
 									value={`azure/${azureDeployment || "deployment"}`}
 									disabled
-									className="bg-app-darkBox/50"
+									className="bg-app-dark-box/50"
 								/>
 								<p className="text-tiny text-ink-faint">
 									Model is auto-generated from deployment name
@@ -968,7 +1132,14 @@ export function Settings() {
 					<div className="flex items-center gap-2 mt-3">
 						<Button
 							onClick={handleTestModel}
-							disabled={!editingProvider || !modelInput.trim() || (editingProvider === "azure" && (!azureBaseUrl.trim() || !azureApiVersion.trim() || !azureDeployment.trim()))}
+							disabled={
+								!editingProvider ||
+								!modelInput.trim() ||
+								(editingProvider === "azure" &&
+									(!azureBaseUrl.trim() ||
+										!azureApiVersion.trim() ||
+										!azureDeployment.trim()))
+							}
 							loading={testModelMutation.isPending}
 							variant="outline"
 							size="md"
@@ -981,23 +1152,27 @@ export function Settings() {
 					</div>
 					{testResult && (
 						<div
-							className={`rounded-md border px-3 py-2 text-sm ${testResult.success
+							className={`rounded-md border px-3 py-2 text-sm ${
+								testResult.success
 									? "border-green-500/20 bg-green-500/10 text-green-400"
 									: "border-red-500/20 bg-red-500/10 text-red-400"
-								}`}
+							}`}
 						>
 							<div>{testResult.message}</div>
 							{testResult.success && testResult.sample ? (
-								<div className="mt-1 text-xs text-ink-dull">Sample: {testResult.sample}</div>
+								<div className="mt-1 text-xs text-ink-dull">
+									Sample: {testResult.sample}
+								</div>
 							) : null}
 						</div>
 					)}
 					{message && (
 						<div
-							className={`rounded-md border px-3 py-2 text-sm ${message.type === "success"
+							className={`rounded-md border px-3 py-2 text-sm ${
+								message.type === "success"
 									? "border-green-500/20 bg-green-500/10 text-green-400"
 									: "border-red-500/20 bg-red-500/10 text-red-400"
-								}`}
+							}`}
 						>
 							{message.text}
 						</div>
@@ -1007,7 +1182,13 @@ export function Settings() {
 							<>
 								{isConfigured(editingProvider ?? "") && (
 									<Button
-										onClick={() => removeMutation.mutate(editingProvider, { onSuccess: (result) => { if (result.success) handleClose(); } })}
+										onClick={() =>
+											removeMutation.mutate(editingProvider, {
+												onSuccess: (result) => {
+													if (result.success) handleClose();
+												},
+											})
+										}
 										loading={removeMutation.isPending}
 										variant="destructive"
 										size="md"
@@ -1018,14 +1199,19 @@ export function Settings() {
 								<Button onClick={handleClose} variant="outline" size="md">
 									Cancel
 								</Button>
-							<Button
-								onClick={handleSave}
-								disabled={!keyInput.trim() || !azureBaseUrl.trim() || !azureApiVersion.trim() || !azureDeployment.trim()}
-								loading={updateMutation.isPending}
-								size="md"
-							>
-								Save
-							</Button>
+								<Button
+									onClick={handleSave}
+									disabled={
+										!keyInput.trim() ||
+										!azureBaseUrl.trim() ||
+										!azureApiVersion.trim() ||
+										!azureDeployment.trim()
+									}
+									loading={updateMutation.isPending}
+									size="md"
+								>
+									Save
+								</Button>
 							</>
 						) : (
 							<>
@@ -1050,7 +1236,7 @@ export function Settings() {
 }
 
 function AppearanceSection() {
-	const { theme, setTheme } = useTheme();
+	const {theme, setTheme} = useTheme();
 
 	return (
 		<div className="mx-auto max-w-2xl px-6 py-6">
@@ -1087,40 +1273,61 @@ function AppearanceSection() {
 	);
 }
 
-function ThemePreview({ themeId }: { themeId: ThemeId }) {
-	const colors: Record<ThemeId, { bg: string; sidebar: string; accent: string }> = {
-		default: { bg: "#1c1d26", sidebar: "#101118", accent: "#2499ff" },
-		vanilla: { bg: "#ffffff", sidebar: "#f5f5f6", accent: "#2499ff" },
-		midnight: { bg: "#121428", sidebar: "#0a0b14", accent: "#2499ff" },
-		noir: { bg: "#080808", sidebar: "#000000", accent: "#2499ff" },
-		slate: { bg: "#151619", sidebar: "#0e0f12", accent: "#2499ff" },
-		nord: { bg: "#1a1e27", sidebar: "#11141b", accent: "#2499ff" },
-		mocha: { bg: "#1a1614", sidebar: "#110f0d", accent: "#2499ff" },
-	};
+function ThemePreview({themeId}: {themeId: ThemeId}) {
+	const colors: Record<ThemeId, {bg: string; sidebar: string; accent: string}> =
+		{
+			default: {bg: "#1c1d26", sidebar: "#101118", accent: "#2499ff"},
+			vanilla: {bg: "#ffffff", sidebar: "#f5f5f6", accent: "#2499ff"},
+			midnight: {bg: "#121428", sidebar: "#0a0b14", accent: "#2499ff"},
+			noir: {bg: "#080808", sidebar: "#000000", accent: "#2499ff"},
+			slate: {bg: "#151619", sidebar: "#0e0f12", accent: "#2499ff"},
+			nord: {bg: "#1a1e27", sidebar: "#11141b", accent: "#2499ff"},
+			mocha: {bg: "#1a1614", sidebar: "#110f0d", accent: "#2499ff"},
+		};
 	const c = colors[themeId];
 
 	return (
 		<div
 			className="mt-3 flex h-12 w-full overflow-hidden rounded border border-app-line/50"
-			style={{ backgroundColor: c.bg }}
+			style={{backgroundColor: c.bg}}
 		>
-			<div className="w-8 border-r" style={{ backgroundColor: c.sidebar, borderColor: c.accent + "30" }} />
+			<div
+				className="w-8 border-r"
+				style={{backgroundColor: c.sidebar, borderColor: c.accent + "30"}}
+			/>
 			<div className="flex flex-1 flex-col gap-1 p-1.5">
-				<div className="h-1.5 w-12 rounded-sm" style={{ backgroundColor: c.accent }} />
-				<div className="h-1 w-16 rounded-sm opacity-30" style={{ backgroundColor: c.accent }} />
-				<div className="h-1 w-10 rounded-sm opacity-20" style={{ backgroundColor: c.accent }} />
+				<div
+					className="h-1.5 w-12 rounded-sm"
+					style={{backgroundColor: c.accent}}
+				/>
+				<div
+					className="h-1 w-16 rounded-sm opacity-30"
+					style={{backgroundColor: c.accent}}
+				/>
+				<div
+					className="h-1 w-10 rounded-sm opacity-20"
+					style={{backgroundColor: c.accent}}
+				/>
 			</div>
 		</div>
 	);
 }
 
-type Platform = "discord" | "slack" | "telegram" | "twitch" | "email" | "webhook" | "mattermost" | "signal";
+type Platform =
+	| "discord"
+	| "slack"
+	| "telegram"
+	| "twitch"
+	| "email"
+	| "webhook"
+	| "mattermost"
+	| "signal";
 
 function ChannelsSection() {
 	const [expandedKey, setExpandedKey] = useState<string | null>(null);
 	const [addingPlatform, setAddingPlatform] = useState<Platform | null>(null);
 
-	const { data: messagingStatus, isLoading } = useQuery({
+	const {data: messagingStatus, isLoading} = useQuery({
 		queryKey: ["messaging-status"],
 		queryFn: api.messagingStatus,
 		staleTime: 5_000,
@@ -1143,9 +1350,12 @@ function ChannelsSection() {
 	return (
 		<div className="mx-auto max-w-3xl px-6 py-6">
 			<div className="mb-6">
-				<h2 className="font-plex text-sm font-semibold text-ink">Messaging Platforms</h2>
+				<h2 className="font-plex text-sm font-semibold text-ink">
+					Messaging Platforms
+				</h2>
 				<p className="mt-1 text-sm text-ink-dull">
-					Connect messaging platforms and configure how conversations route to agents.
+					Connect messaging platforms and configure how conversations route to
+					agents.
 				</p>
 			</div>
 
@@ -1182,7 +1392,9 @@ function ChannelsSection() {
 									expanded={expandedKey === instance.runtime_key}
 									onToggleExpand={() =>
 										setExpandedKey(
-											expandedKey === instance.runtime_key ? null : instance.runtime_key,
+											expandedKey === instance.runtime_key
+												? null
+												: instance.runtime_key,
 										)
 									}
 								/>
@@ -1204,22 +1416,20 @@ function ChannelsSection() {
 	);
 }
 
-
-
 // ── Secrets Section ──────────────────────────────────────────────────────
 
 function SecretsSection() {
 	const queryClient = useQueryClient();
 
 	// Store status.
-	const { data: storeStatus, isLoading: statusLoading } = useQuery({
+	const {data: storeStatus, isLoading: statusLoading} = useQuery({
 		queryKey: ["secrets-status"],
 		queryFn: () => api.secretsStatus(),
 		staleTime: 5_000,
 	});
 
 	// Secret list.
-	const { data: secretsData, isLoading: secretsLoading } = useQuery({
+	const {data: secretsData, isLoading: secretsLoading} = useQuery({
 		queryKey: ["secrets"],
 		queryFn: () => api.listSecrets(),
 		staleTime: 5_000,
@@ -1238,7 +1448,10 @@ function SecretsSection() {
 	const [nameInput, setNameInput] = useState("");
 	const [valueInput, setValueInput] = useState("");
 	const [categoryInput, setCategoryInput] = useState<SecretCategory>("tool");
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 
 	// Encryption flow state.
 	const [encryptDialogOpen, setEncryptDialogOpen] = useState(false);
@@ -1247,18 +1460,27 @@ function SecretsSection() {
 	const [unlockKeyInput, setUnlockKeyInput] = useState("");
 	const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
 
-	const [filterCategory, setFilterCategory] = useState<"all" | SecretCategory>("all");
+	const [filterCategory, setFilterCategory] = useState<"all" | SecretCategory>(
+		"all",
+	);
 	const [searchQuery, setSearchQuery] = useState("");
 
 	// ── Mutations ────────────────────────────────────────────────────────
 	const invalidateSecrets = () => {
-		queryClient.invalidateQueries({ queryKey: ["secrets"] });
-		queryClient.invalidateQueries({ queryKey: ["secrets-status"] });
+		queryClient.invalidateQueries({queryKey: ["secrets"]});
+		queryClient.invalidateQueries({queryKey: ["secrets-status"]});
 	};
 
 	const putMutation = useMutation({
-		mutationFn: ({ name, value, category }: { name: string; value: string; category?: SecretCategory }) =>
-			api.putSecret(name, value, category),
+		mutationFn: ({
+			name,
+			value,
+			category,
+		}: {
+			name: string;
+			value: string;
+			category?: SecretCategory;
+		}) => api.putSecret(name, value, category),
 		onSuccess: (result) => {
 			invalidateSecrets();
 			setAddDialogOpen(false);
@@ -1273,7 +1495,7 @@ function SecretsSection() {
 			});
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -1290,7 +1512,7 @@ function SecretsSection() {
 			});
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -1302,7 +1524,7 @@ function SecretsSection() {
 			setMasterKeyCopied(false);
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 			setEncryptDialogOpen(false);
 		},
 	});
@@ -1312,10 +1534,10 @@ function SecretsSection() {
 		onSuccess: () => {
 			invalidateSecrets();
 			setUnlockKeyInput("");
-			setMessage({ text: "Secret store unlocked.", type: "success" });
+			setMessage({text: "Secret store unlocked.", type: "success"});
 		},
 		onError: (error) => {
-			setMessage({ text: `Unlock failed: ${error.message}`, type: "error" });
+			setMessage({text: `Unlock failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -1323,10 +1545,10 @@ function SecretsSection() {
 		mutationFn: () => api.lockSecrets(),
 		onSuccess: () => {
 			invalidateSecrets();
-			setMessage({ text: "Secret store locked.", type: "success" });
+			setMessage({text: "Secret store locked.", type: "success"});
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -1340,7 +1562,7 @@ function SecretsSection() {
 			setEncryptDialogOpen(true);
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 			setRotateDialogOpen(false);
 		},
 	});
@@ -1350,14 +1572,15 @@ function SecretsSection() {
 		onSuccess: (result) => {
 			invalidateSecrets();
 			setMessage({
-				text: result.migrated.length > 0
-					? `Migrated ${result.migrated.length} secrets from config.toml.`
-					: result.message,
+				text:
+					result.migrated.length > 0
+						? `Migrated ${result.migrated.length} secrets from config.toml.`
+						: result.message,
 				type: result.migrated.length > 0 ? "success" : "success",
 			});
 		},
 		onError: (error) => {
-			setMessage({ text: `Migration failed: ${error.message}`, type: "error" });
+			setMessage({text: `Migration failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -1381,7 +1604,7 @@ function SecretsSection() {
 	const handleSave = () => {
 		const name = editingSecret ?? nameInput.trim().toUpperCase();
 		if (!name || !valueInput) return;
-		putMutation.mutate({ name, value: valueInput, category: categoryInput });
+		putMutation.mutate({name, value: valueInput, category: categoryInput});
 	};
 
 	const handleCopyKey = async () => {
@@ -1405,8 +1628,13 @@ function SecretsSection() {
 	};
 
 	const filteredSecrets = secrets.filter((secret) => {
-		if (filterCategory !== "all" && secret.category !== filterCategory) return false;
-		if (searchQuery && !secret.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+		if (filterCategory !== "all" && secret.category !== filterCategory)
+			return false;
+		if (
+			searchQuery &&
+			!secret.name.toLowerCase().includes(searchQuery.toLowerCase())
+		)
+			return false;
 		return true;
 	});
 
@@ -1416,30 +1644,37 @@ function SecretsSection() {
 			<div className="mb-6">
 				<h2 className="font-plex text-sm font-semibold text-ink">Secrets</h2>
 				<p className="mt-1 text-sm text-ink-dull">
-					Manage credentials for LLM providers (system) and CLI tools used by workers (tool).
-					System secrets are never exposed to worker subprocesses. Tool secrets are injected as
-					environment variables.
+					Manage credentials for LLM providers (system) and CLI tools used by
+					workers (tool). System secrets are never exposed to worker
+					subprocesses. Tool secrets are injected as environment variables.
 				</p>
 			</div>
 
 			{/* Status bar */}
 			{storeStatus && (
-				<div className="mb-4 flex items-center gap-3 rounded-md border border-app-line bg-app-darkBox/20 px-4 py-3">
+				<div className="mb-4 flex items-center gap-3 rounded-md border border-app-line bg-app-dark-box/20 px-4 py-3">
 					<div className="flex items-center gap-2">
-						<div className={`h-2 w-2 rounded-full ${
-							state === "unlocked" ? "bg-green-500"
-								: state === "locked" ? "bg-red-500"
-									: "bg-amber-500"
-						}`} />
+						<div
+							className={`h-2 w-2 rounded-full ${
+								state === "unlocked"
+									? "bg-green-500"
+									: state === "locked"
+										? "bg-red-500"
+										: "bg-amber-500"
+							}`}
+						/>
 						<span className="text-sm font-medium text-ink">
-							{state === "unlocked" ? "Encrypted & Unlocked"
-								: state === "locked" ? "Encrypted & Locked"
+							{state === "unlocked"
+								? "Encrypted & Unlocked"
+								: state === "locked"
+									? "Encrypted & Locked"
 									: "Unencrypted"}
 						</span>
 					</div>
 					<div className="flex-1" />
 					<span className="text-tiny text-ink-faint">
-						{storeStatus.secret_count} secrets ({storeStatus.system_count} system, {storeStatus.tool_count} tool)
+						{storeStatus.secret_count} secrets ({storeStatus.system_count}{" "}
+						system, {storeStatus.tool_count} tool)
 					</span>
 				</div>
 			)}
@@ -1449,14 +1684,19 @@ function SecretsSection() {
 				<div className="mb-4 rounded-md border border-amber-500/20 bg-amber-500/5 px-4 py-3">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div className="sm:pr-4">
-							<p className="text-sm font-medium text-amber-400">Encryption not enabled</p>
+							<p className="text-sm font-medium text-amber-400">
+								Encryption not enabled
+							</p>
 							<p className="mt-0.5 text-sm text-ink-faint">
-								Secrets are stored without encryption. Enable encryption for protection
-								against volume compromise.
+								Secrets are stored without encryption. Enable encryption for
+								protection against volume compromise.
 							</p>
 						</div>
 						<Button
-							onClick={() => { setEncryptDialogOpen(true); setMasterKeyDisplay(null); }}
+							onClick={() => {
+								setEncryptDialogOpen(true);
+								setMasterKeyDisplay(null);
+							}}
 							variant="outline"
 							className="w-full shrink-0 whitespace-nowrap sm:w-auto"
 						>
@@ -1471,8 +1711,8 @@ function SecretsSection() {
 				<div className="mb-4 rounded-md border border-red-500/20 bg-red-500/5 px-4 py-3">
 					<p className="text-sm font-medium text-red-400">Secrets are locked</p>
 					<p className="mt-0.5 text-sm text-ink-faint">
-						Enter your master key to unlock encrypted secrets. You can view secret names
-						but cannot add, edit, or read values while locked.
+						Enter your master key to unlock encrypted secrets. You can view
+						secret names but cannot add, edit, or read values while locked.
 					</p>
 					<div className="mt-3 flex items-center gap-2">
 						<Input
@@ -1481,7 +1721,10 @@ function SecretsSection() {
 							onChange={(e) => setUnlockKeyInput(e.target.value)}
 							placeholder="Paste master key (hex)"
 							className="max-w-sm font-mono text-tiny"
-							onKeyDown={(e) => { if (e.key === "Enter" && unlockKeyInput.trim()) unlockMutation.mutate(unlockKeyInput.trim()); }}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && unlockKeyInput.trim())
+									unlockMutation.mutate(unlockKeyInput.trim());
+							}}
 						/>
 						<Button
 							onClick={() => unlockMutation.mutate(unlockKeyInput.trim())}
@@ -1497,11 +1740,13 @@ function SecretsSection() {
 
 			{/* Feedback message */}
 			{message && (
-				<div className={`mb-4 rounded-md border px-3 py-2 text-sm ${
-					message.type === "success"
-						? "border-green-500/20 bg-green-500/10 text-green-400"
-						: "border-red-500/20 bg-red-500/10 text-red-400"
-				}`}>
+				<div
+					className={`mb-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
+							? "border-green-500/20 bg-green-500/10 text-green-400"
+							: "border-red-500/20 bg-red-500/10 text-red-400"
+					}`}
+				>
 					{message.text}
 				</div>
 			)}
@@ -1525,7 +1770,9 @@ function SecretsSection() {
 									: "text-ink-faint hover:text-ink-dull"
 							}`}
 						>
-							{cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+							{cat === "all"
+								? "All"
+								: cat.charAt(0).toUpperCase() + cat.slice(1)}
 						</button>
 					))}
 				</div>
@@ -1558,7 +1805,12 @@ function SecretsSection() {
 							<Button onClick={handleOpenAdd} size="md">
 								Add secret
 							</Button>
-							<Button onClick={() => migrateMutation.mutate()} variant="outline" size="md" loading={migrateMutation.isPending}>
+							<Button
+								onClick={() => migrateMutation.mutate()}
+								variant="outline"
+								size="md"
+								loading={migrateMutation.isPending}
+							>
 								Migrate from config
 							</Button>
 						</div>
@@ -1573,7 +1825,9 @@ function SecretsSection() {
 						>
 							<div className="flex-1 min-w-0">
 								<div className="flex items-center gap-2">
-									<code className="text-sm font-medium text-ink">{secret.name}</code>
+									<code className="text-sm font-medium text-ink">
+										{secret.name}
+									</code>
 									<Badge
 										variant="outline"
 										size="md"
@@ -1588,10 +1842,18 @@ function SecretsSection() {
 							</div>
 							{canMutate && (
 								<div className="flex gap-1.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
-									<Button onClick={() => handleOpenEdit(secret)} variant="outline" size="md">
+									<Button
+										onClick={() => handleOpenEdit(secret)}
+										variant="outline"
+										size="md"
+									>
 										Update
 									</Button>
-									<Button onClick={() => setDeleteTarget(secret.name)} variant="outline" size="md">
+									<Button
+										onClick={() => setDeleteTarget(secret.name)}
+										variant="outline"
+										size="md"
+									>
 										Delete
 									</Button>
 								</div>
@@ -1604,14 +1866,28 @@ function SecretsSection() {
 			{/* Bottom actions for encrypted stores */}
 			{storeStatus?.encrypted && !storeStatus.platform_managed && canMutate && (
 				<div className="mt-6 flex items-center gap-2 border-t border-app-line pt-4">
-					<Button onClick={() => lockMutation.mutate()} variant="outline" size="md" loading={lockMutation.isPending}>
+					<Button
+						onClick={() => lockMutation.mutate()}
+						variant="outline"
+						size="md"
+						loading={lockMutation.isPending}
+					>
 						Lock store
 					</Button>
-					<Button onClick={() => setRotateDialogOpen(true)} variant="outline" size="md">
+					<Button
+						onClick={() => setRotateDialogOpen(true)}
+						variant="outline"
+						size="md"
+					>
 						Rotate master key
 					</Button>
 					<div className="flex-1" />
-					<Button onClick={() => migrateMutation.mutate()} variant="outline" size="md" loading={migrateMutation.isPending}>
+					<Button
+						onClick={() => migrateMutation.mutate()}
+						variant="outline"
+						size="md"
+						loading={migrateMutation.isPending}
+					>
 						Migrate from config
 					</Button>
 				</div>
@@ -1620,7 +1896,12 @@ function SecretsSection() {
 			{/* Migrate button for unencrypted stores */}
 			{state === "unencrypted" && secrets.length > 0 && (
 				<div className="mt-4 flex justify-end">
-					<Button onClick={() => migrateMutation.mutate()} variant="outline" size="md" loading={migrateMutation.isPending}>
+					<Button
+						onClick={() => migrateMutation.mutate()}
+						variant="outline"
+						size="md"
+						loading={migrateMutation.isPending}
+					>
 						Migrate from config
 					</Button>
 				</div>
@@ -1640,7 +1921,9 @@ function SecretsSection() {
 			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle>{editingSecret ? "Update Secret" : "Add Secret"}</DialogTitle>
+						<DialogTitle>
+							{editingSecret ? "Update Secret" : "Add Secret"}
+						</DialogTitle>
 						<DialogDescription>
 							{editingSecret
 								? `Enter a new value for ${editingSecret}. The existing value will be overwritten.`
@@ -1653,13 +1936,18 @@ function SecretsSection() {
 							<label className="text-sm font-medium text-ink">Name</label>
 							<Input
 								value={nameInput}
-								onChange={(e) => setNameInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
+								onChange={(e) =>
+									setNameInput(
+										e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""),
+									)
+								}
 								placeholder="GH_TOKEN"
 								className="font-mono"
 								autoFocus
 							/>
 							<p className="text-tiny text-ink-faint">
-								UPPER_SNAKE_CASE. This is also the env var name for tool secrets.
+								UPPER_SNAKE_CASE. This is also the env var name for tool
+								secrets.
 							</p>
 						</div>
 					)}
@@ -1672,7 +1960,9 @@ function SecretsSection() {
 							onChange={(e) => setValueInput(e.target.value)}
 							placeholder={editingSecret ? "Enter new value" : "Secret value"}
 							autoFocus={!!editingSecret}
-							onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") handleSave();
+							}}
 						/>
 					</div>
 
@@ -1680,7 +1970,9 @@ function SecretsSection() {
 						<label className="text-sm font-medium text-ink">Category</label>
 						<SelectRoot
 							value={categoryInput}
-							onValueChange={(value) => setCategoryInput(value as SecretCategory)}
+							onValueChange={(value) =>
+								setCategoryInput(value as SecretCategory)
+							}
 						>
 							<SelectTrigger>
 								<SelectValue />
@@ -1703,7 +1995,10 @@ function SecretsSection() {
 
 					<DialogFooter>
 						<Button
-							onClick={() => { setAddDialogOpen(false); setEditingSecret(null); }}
+							onClick={() => {
+								setAddDialogOpen(false);
+								setEditingSecret(null);
+							}}
 							variant="outline"
 							size="md"
 						>
@@ -1722,21 +2017,34 @@ function SecretsSection() {
 			</DialogRoot>
 
 			{/* ── Delete Confirmation ───────────────────────────────────── */}
-			<DialogRoot open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+			<DialogRoot
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+			>
 				<DialogContent className="max-w-sm">
 					<DialogHeader>
 						<DialogTitle>Delete Secret</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete <code className="font-mono text-ink">{deleteTarget}</code>?
-							{" "}If this secret is referenced in config.toml, the reference will fail to resolve.
+							Are you sure you want to delete{" "}
+							<code className="font-mono text-ink">{deleteTarget}</code>? If
+							this secret is referenced in config.toml, the reference will fail
+							to resolve.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button onClick={() => setDeleteTarget(null)} variant="outline" size="md">
+						<Button
+							onClick={() => setDeleteTarget(null)}
+							variant="outline"
+							size="md"
+						>
 							Cancel
 						</Button>
 						<Button
-							onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget); }}
+							onClick={() => {
+								if (deleteTarget) deleteMutation.mutate(deleteTarget);
+							}}
 							loading={deleteMutation.isPending}
 							variant="destructive"
 							size="md"
@@ -1764,9 +2072,9 @@ function SecretsSection() {
 							<DialogHeader>
 								<DialogTitle>Enable Encryption</DialogTitle>
 								<DialogDescription>
-									This will generate a master key and encrypt all secrets at rest using
-									AES-256-GCM. On Linux, you will need the master key to unlock secrets
-									after a reboot.
+									This will generate a master key and encrypt all secrets at
+									rest using AES-256-GCM. On Linux, you will need the master key
+									to unlock secrets after a reboot.
 								</DialogDescription>
 							</DialogHeader>
 							<DialogFooter>
@@ -1791,8 +2099,9 @@ function SecretsSection() {
 							<DialogHeader>
 								<DialogTitle>Master Key Generated</DialogTitle>
 								<DialogDescription>
-									Save this key somewhere safe. On Linux, you will need it to unlock the
-									secret store after a reboot. This is the only time the key will be shown.
+									Save this key somewhere safe. On Linux, you will need it to
+									unlock the secret store after a reboot. This is the only time
+									the key will be shown.
 								</DialogDescription>
 							</DialogHeader>
 							<div className="space-y-3">
@@ -1800,13 +2109,18 @@ function SecretsSection() {
 									<code className="flex-1 rounded border border-app-line bg-app-darkerBox px-3 py-2 font-mono text-tiny text-ink break-all select-all">
 										{masterKeyDisplay}
 									</code>
-									<Button onClick={handleCopyKey} size="md" variant={masterKeyCopied ? "secondary" : "outline"}>
+									<Button
+										onClick={handleCopyKey}
+										size="md"
+										variant={masterKeyCopied ? "secondary" : "outline"}
+									>
 										{masterKeyCopied ? "Copied" : "Copy"}
 									</Button>
 								</div>
 								<div className="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm text-amber-400">
-									If you lose this key and the OS credential store is cleared (e.g. after
-									a Linux reboot), you will not be able to access your encrypted secrets.
+									If you lose this key and the OS credential store is cleared
+									(e.g. after a Linux reboot), you will not be able to access
+									your encrypted secrets.
 								</div>
 							</div>
 							<DialogFooter>
@@ -1827,17 +2141,27 @@ function SecretsSection() {
 			</DialogRoot>
 
 			{/* ── Rotate Key Confirmation ───────────────────────────────── */}
-			<DialogRoot open={rotateDialogOpen} onOpenChange={(open) => { if (!open) setRotateDialogOpen(false); }}>
+			<DialogRoot
+				open={rotateDialogOpen}
+				onOpenChange={(open) => {
+					if (!open) setRotateDialogOpen(false);
+				}}
+			>
 				<DialogContent className="max-w-sm">
 					<DialogHeader>
 						<DialogTitle>Rotate Master Key</DialogTitle>
 						<DialogDescription>
-							This will generate a new master key and re-encrypt all secrets. Your current
-							master key will be invalidated. You will need to save the new key.
+							This will generate a new master key and re-encrypt all secrets.
+							Your current master key will be invalidated. You will need to save
+							the new key.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button onClick={() => setRotateDialogOpen(false)} variant="outline" size="md">
+						<Button
+							onClick={() => setRotateDialogOpen(false)}
+							variant="outline"
+							size="md"
+						>
 							Cancel
 						</Button>
 						<Button
@@ -1859,11 +2183,14 @@ interface GlobalSettingsSectionProps {
 	isLoading: boolean;
 }
 
-function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
+function ApiKeysSection({settings, isLoading}: GlobalSettingsSectionProps) {
 	const queryClient = useQueryClient();
 	const [editingBraveKey, setEditingBraveKey] = useState(false);
 	const [braveKeyInput, setBraveKeyInput] = useState("");
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 
 	const updateMutation = useMutation({
 		mutationFn: api.updateGlobalSettings,
@@ -1871,29 +2198,31 @@ function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 			if (result.success) {
 				setEditingBraveKey(false);
 				setBraveKeyInput("");
-				setMessage({ text: result.message, type: "success" });
-				queryClient.invalidateQueries({ queryKey: ["global-settings"] });
+				setMessage({text: result.message, type: "success"});
+				queryClient.invalidateQueries({queryKey: ["global-settings"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
 	const handleSaveBraveKey = () => {
-		updateMutation.mutate({ brave_search_key: braveKeyInput.trim() || null });
+		updateMutation.mutate({brave_search_key: braveKeyInput.trim() || null});
 	};
 
 	const handleRemoveBraveKey = () => {
-		updateMutation.mutate({ brave_search_key: null });
+		updateMutation.mutate({brave_search_key: null});
 	};
 
 	return (
 		<div className="mx-auto max-w-2xl px-6 py-6">
 			<div className="mb-6">
-				<h2 className="font-plex text-sm font-semibold text-ink">Third-Party API Keys</h2>
+				<h2 className="font-plex text-sm font-semibold text-ink">
+					Third-Party API Keys
+				</h2>
 				<p className="mt-1 text-sm text-ink-dull">
 					Configure API keys for third-party services used by workers.
 				</p>
@@ -1911,9 +2240,13 @@ function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 							<FontAwesomeIcon icon={faSearch} className="text-ink-faint" />
 							<div className="flex-1">
 								<div className="flex items-center gap-2">
-									<span className="text-sm font-medium text-ink">Brave Search</span>
+									<span className="text-sm font-medium text-ink">
+										Brave Search
+									</span>
 									{settings?.brave_search_key && (
-										<span className="text-tiny text-green-400">● Configured</span>
+										<span className="text-tiny text-green-400">
+											● Configured
+										</span>
 									)}
 								</div>
 								<p className="mt-0.5 text-sm text-ink-dull">
@@ -1950,19 +2283,27 @@ function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 
 			{message && (
 				<div
-					className={`mt-4 rounded-md border px-3 py-2 text-sm ${message.type === "success"
+					className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
 							? "border-green-500/20 bg-green-500/10 text-green-400"
 							: "border-red-500/20 bg-red-500/10 text-red-400"
-						}`}
+					}`}
 				>
 					{message.text}
 				</div>
 			)}
 
-			<DialogRoot open={editingBraveKey} onOpenChange={(open) => { if (!open) setEditingBraveKey(false); }}>
+			<DialogRoot
+				open={editingBraveKey}
+				onOpenChange={(open) => {
+					if (!open) setEditingBraveKey(false);
+				}}
+			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle>{settings?.brave_search_key ? "Update" : "Add"} Brave Search Key</DialogTitle>
+						<DialogTitle>
+							{settings?.brave_search_key ? "Update" : "Add"} Brave Search Key
+						</DialogTitle>
 						<DialogDescription>
 							Enter your Brave Search API key. Get one at brave.com/search/api
 						</DialogDescription>
@@ -1978,7 +2319,11 @@ function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 						}}
 					/>
 					<DialogFooter>
-						<Button onClick={() => setEditingBraveKey(false)} variant="outline" size="md">
+						<Button
+							onClick={() => setEditingBraveKey(false)}
+							variant="outline"
+							size="md"
+						>
 							Cancel
 						</Button>
 						<Button
@@ -1996,12 +2341,18 @@ function ApiKeysSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 	);
 }
 
-function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
+function ServerSection({settings, isLoading}: GlobalSettingsSectionProps) {
 	const queryClient = useQueryClient();
 	const [apiEnabled, setApiEnabled] = useState(settings?.api_enabled ?? true);
-	const [apiPort, setApiPort] = useState(settings?.api_port.toString() ?? "19898");
+	const [apiPort, setApiPort] = useState(
+		settings?.api_port.toString() ?? "19898",
+	);
 	const [apiBind, setApiBind] = useState(settings?.api_bind ?? "127.0.0.1");
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error"; requiresRestart?: boolean } | null>(null);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+		requiresRestart?: boolean;
+	} | null>(null);
 
 	// Update form state when settings load
 	useEffect(() => {
@@ -2016,21 +2367,25 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 		mutationFn: api.updateGlobalSettings,
 		onSuccess: (result) => {
 			if (result.success) {
-				setMessage({ text: result.message, type: "success", requiresRestart: result.requires_restart });
-				queryClient.invalidateQueries({ queryKey: ["global-settings"] });
+				setMessage({
+					text: result.message,
+					type: "success",
+					requiresRestart: result.requires_restart,
+				});
+				queryClient.invalidateQueries({queryKey: ["global-settings"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
 	const handleSave = () => {
 		const port = parseInt(apiPort, 10);
 		if (isNaN(port) || port < 1024 || port > 65535) {
-			setMessage({ text: "Port must be between 1024 and 65535", type: "error" });
+			setMessage({text: "Port must be between 1024 and 65535", type: "error"});
 			return;
 		}
 
@@ -2044,9 +2399,12 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 	return (
 		<div className="mx-auto max-w-2xl px-6 py-6">
 			<div className="mb-6">
-				<h2 className="font-plex text-sm font-semibold text-ink">API Server Configuration</h2>
+				<h2 className="font-plex text-sm font-semibold text-ink">
+					API Server Configuration
+				</h2>
 				<p className="mt-1 text-sm text-ink-dull">
-					Configure the HTTP API server. Changes require a restart to take effect.
+					Configure the HTTP API server. Changes require a restart to take
+					effect.
 				</p>
 			</div>
 
@@ -2060,7 +2418,9 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 					<div className="rounded-lg border border-app-line bg-app-box p-4">
 						<div className="flex items-center justify-between">
 							<div>
-								<span className="text-sm font-medium text-ink">Enable API Server</span>
+								<span className="text-sm font-medium text-ink">
+									Enable API Server
+								</span>
 								<p className="mt-0.5 text-sm text-ink-dull">
 									Disable to prevent the HTTP API from starting
 								</p>
@@ -2076,7 +2436,9 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 					<div className="rounded-lg border border-app-line bg-app-box p-4">
 						<label className="block">
 							<span className="text-sm font-medium text-ink">Port</span>
-							<p className="mt-0.5 text-sm text-ink-dull">Port number for the API server</p>
+							<p className="mt-0.5 text-sm text-ink-dull">
+								Port number for the API server
+							</p>
 							<Input
 								type="number"
 								value={apiPort}
@@ -2092,7 +2454,8 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 						<label className="block">
 							<span className="text-sm font-medium text-ink">Bind Address</span>
 							<p className="mt-0.5 text-sm text-ink-dull">
-								IP address to bind to (127.0.0.1 for local, 0.0.0.0 for all interfaces)
+								IP address to bind to (127.0.0.1 for local, 0.0.0.0 for all
+								interfaces)
 							</p>
 							<Input
 								type="text"
@@ -2112,10 +2475,11 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 
 			{message && (
 				<div
-					className={`mt-4 rounded-md border px-3 py-2 text-sm ${message.type === "success"
+					className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
 							? "border-green-500/20 bg-green-500/10 text-green-400"
 							: "border-red-500/20 bg-red-500/10 text-red-400"
-						}`}
+					}`}
 				>
 					{message.text}
 					{message.requiresRestart && (
@@ -2129,10 +2493,15 @@ function ServerSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 	);
 }
 
-function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) {
+function WorkerLogsSection({settings, isLoading}: GlobalSettingsSectionProps) {
 	const queryClient = useQueryClient();
-	const [logMode, setLogMode] = useState(settings?.worker_log_mode ?? "errors_only");
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [logMode, setLogMode] = useState(
+		settings?.worker_log_mode ?? "errors_only",
+	);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 
 	// Update form state when settings load
 	useEffect(() => {
@@ -2145,19 +2514,19 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 		mutationFn: api.updateGlobalSettings,
 		onSuccess: (result) => {
 			if (result.success) {
-				setMessage({ text: result.message, type: "success" });
-				queryClient.invalidateQueries({ queryKey: ["global-settings"] });
+				setMessage({text: result.message, type: "success"});
+				queryClient.invalidateQueries({queryKey: ["global-settings"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
 	const handleSave = () => {
-		updateMutation.mutate({ worker_log_mode: logMode });
+		updateMutation.mutate({worker_log_mode: logMode});
 	};
 
 	const modes = [
@@ -2181,7 +2550,9 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 	return (
 		<div className="mx-auto max-w-2xl px-6 py-6">
 			<div className="mb-6">
-				<h2 className="font-plex text-sm font-semibold text-ink">Worker Execution Logs</h2>
+				<h2 className="font-plex text-sm font-semibold text-ink">
+					Worker Execution Logs
+				</h2>
 				<p className="mt-1 text-sm text-ink-dull">
 					Control how worker execution logs are stored in the logs directory.
 				</p>
@@ -2198,10 +2569,11 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 						{modes.map((mode) => (
 							<div
 								key={mode.value}
-								className={`rounded-lg border p-4 cursor-pointer transition-colors ${logMode === mode.value
+								className={`rounded-lg border p-4 cursor-pointer transition-colors ${
+									logMode === mode.value
 										? "border-accent bg-accent/5"
 										: "border-app-line bg-app-box hover:border-app-line/80"
-									}`}
+								}`}
 								onClick={() => setLogMode(mode.value)}
 							>
 								<label className="flex items-start gap-3 cursor-pointer">
@@ -2213,8 +2585,12 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 										className="mt-0.5"
 									/>
 									<div className="flex-1">
-										<span className="text-sm font-medium text-ink">{mode.label}</span>
-										<p className="mt-0.5 text-sm text-ink-dull">{mode.description}</p>
+										<span className="text-sm font-medium text-ink">
+											{mode.label}
+										</span>
+										<p className="mt-0.5 text-sm text-ink-dull">
+											{mode.description}
+										</p>
 									</div>
 								</label>
 							</div>
@@ -2229,10 +2605,11 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 
 			{message && (
 				<div
-					className={`mt-4 rounded-md border px-3 py-2 text-sm ${message.type === "success"
+					className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
 							? "border-green-500/20 bg-green-500/10 text-green-400"
 							: "border-red-500/20 bg-red-500/10 text-red-400"
-						}`}
+					}`}
 				>
 					{message.text}
 				</div>
@@ -2242,28 +2619,49 @@ function WorkerLogsSection({ settings, isLoading }: GlobalSettingsSectionProps) 
 }
 
 const PERMISSION_OPTIONS = [
-	{ value: "allow", label: "Allow", description: "Tool can run without restriction" },
-	{ value: "deny", label: "Deny", description: "Tool is completely disabled" },
+	{
+		value: "allow",
+		label: "Allow",
+		description: "Tool can run without restriction",
+	},
+	{value: "deny", label: "Deny", description: "Tool is completely disabled"},
 ];
 
-function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
+function OpenCodeSection({settings, isLoading}: GlobalSettingsSectionProps) {
 	const queryClient = useQueryClient();
 	const [enabled, setEnabled] = useState(settings?.opencode?.enabled ?? false);
 	const [path, setPath] = useState(settings?.opencode?.path ?? "opencode");
-	const [maxServers, setMaxServers] = useState(settings?.opencode?.max_servers?.toString() ?? "5");
-	const [startupTimeout, setStartupTimeout] = useState(settings?.opencode?.server_startup_timeout_secs?.toString() ?? "30");
-	const [maxRetries, setMaxRetries] = useState(settings?.opencode?.max_restart_retries?.toString() ?? "5");
-	const [editPerm, setEditPerm] = useState(settings?.opencode?.permissions?.edit ?? "allow");
-	const [bashPerm, setBashPerm] = useState(settings?.opencode?.permissions?.bash ?? "allow");
-	const [webfetchPerm, setWebfetchPerm] = useState(settings?.opencode?.permissions?.webfetch ?? "allow");
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [maxServers, setMaxServers] = useState(
+		settings?.opencode?.max_servers?.toString() ?? "5",
+	);
+	const [startupTimeout, setStartupTimeout] = useState(
+		settings?.opencode?.server_startup_timeout_secs?.toString() ?? "30",
+	);
+	const [maxRetries, setMaxRetries] = useState(
+		settings?.opencode?.max_restart_retries?.toString() ?? "5",
+	);
+	const [editPerm, setEditPerm] = useState(
+		settings?.opencode?.permissions?.edit ?? "allow",
+	);
+	const [bashPerm, setBashPerm] = useState(
+		settings?.opencode?.permissions?.bash ?? "allow",
+	);
+	const [webfetchPerm, setWebfetchPerm] = useState(
+		settings?.opencode?.permissions?.webfetch ?? "allow",
+	);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 
 	useEffect(() => {
 		if (settings?.opencode) {
 			setEnabled(settings.opencode.enabled);
 			setPath(settings.opencode.path);
 			setMaxServers(settings.opencode.max_servers.toString());
-			setStartupTimeout(settings.opencode.server_startup_timeout_secs.toString());
+			setStartupTimeout(
+				settings.opencode.server_startup_timeout_secs.toString(),
+			);
 			setMaxRetries(settings.opencode.max_restart_retries.toString());
 			setEditPerm(settings.opencode.permissions.edit);
 			setBashPerm(settings.opencode.permissions.bash);
@@ -2275,31 +2673,31 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 		mutationFn: api.updateGlobalSettings,
 		onSuccess: (result) => {
 			if (result.success) {
-				setMessage({ text: result.message, type: "success" });
-				queryClient.invalidateQueries({ queryKey: ["global-settings"] });
+				setMessage({text: result.message, type: "success"});
+				queryClient.invalidateQueries({queryKey: ["global-settings"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
 	const handleSave = () => {
 		const servers = parseInt(maxServers, 10);
 		if (isNaN(servers) || servers < 1) {
-			setMessage({ text: "Max servers must be at least 1", type: "error" });
+			setMessage({text: "Max servers must be at least 1", type: "error"});
 			return;
 		}
 		const timeout = parseInt(startupTimeout, 10);
 		if (isNaN(timeout) || timeout < 1) {
-			setMessage({ text: "Startup timeout must be at least 1", type: "error" });
+			setMessage({text: "Startup timeout must be at least 1", type: "error"});
 			return;
 		}
 		const retries = parseInt(maxRetries, 10);
 		if (isNaN(retries) || retries < 0) {
-			setMessage({ text: "Max retries cannot be negative", type: "error" });
+			setMessage({text: "Max retries cannot be negative", type: "error"});
 			return;
 		}
 
@@ -2322,9 +2720,24 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 	return (
 		<div className="mx-auto max-w-2xl px-6 py-6">
 			<div className="mb-6">
-				<h2 className="font-plex text-sm font-semibold text-ink">OpenCode Workers</h2>
+				<h2 className="font-plex text-sm font-semibold text-ink">
+					OpenCode Workers
+				</h2>
 				<p className="mt-1 text-sm text-ink-dull">
-					Spawn <a href="https://opencode.ai" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">OpenCode</a> coding agents as worker subprocesses. Requires the <code className="rounded bg-app-box px-1 py-0.5 text-tiny text-ink-dull">opencode</code> binary on PATH or a custom path below.
+					Spawn{" "}
+					<a
+						href="https://opencode.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-accent hover:underline"
+					>
+						OpenCode
+					</a>{" "}
+					coding agents as worker subprocesses. Requires the{" "}
+					<code className="rounded bg-app-box px-1 py-0.5 text-tiny text-ink-dull">
+						opencode
+					</code>{" "}
+					binary on PATH or a custom path below.
 				</p>
 			</div>
 
@@ -2345,7 +2758,9 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 								className="h-4 w-4"
 							/>
 							<div>
-								<span className="text-sm font-medium text-ink">Enable OpenCode Workers</span>
+								<span className="text-sm font-medium text-ink">
+									Enable OpenCode Workers
+								</span>
 								<p className="mt-0.5 text-sm text-ink-dull">
 									Allow agents to spawn OpenCode coding sessions
 								</p>
@@ -2358,9 +2773,12 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 							{/* Binary path */}
 							<div className="rounded-lg border border-app-line bg-app-box p-4">
 								<label className="block">
-									<span className="text-sm font-medium text-ink">Binary Path</span>
+									<span className="text-sm font-medium text-ink">
+										Binary Path
+									</span>
 									<p className="mt-0.5 text-sm text-ink-dull">
-										Path to the OpenCode binary, or just the name if it's on PATH
+										Path to the OpenCode binary, or just the name if it's on
+										PATH
 									</p>
 									<Input
 										type="text"
@@ -2374,13 +2792,18 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 
 							{/* Pool settings */}
 							<div className="rounded-lg border border-app-line bg-app-box p-4">
-								<span className="text-sm font-medium text-ink">Server Pool</span>
+								<span className="text-sm font-medium text-ink">
+									Server Pool
+								</span>
 								<p className="mt-0.5 text-sm text-ink-dull">
-									Controls how many OpenCode server processes can run concurrently
+									Controls how many OpenCode server processes can run
+									concurrently
 								</p>
 								<div className="mt-3 grid grid-cols-3 gap-3">
 									<label className="block">
-										<span className="text-tiny font-medium text-ink-dull">Max Servers</span>
+										<span className="text-tiny font-medium text-ink-dull">
+											Max Servers
+										</span>
 										<Input
 											type="number"
 											value={maxServers}
@@ -2391,7 +2814,9 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 										/>
 									</label>
 									<label className="block">
-										<span className="text-tiny font-medium text-ink-dull">Startup Timeout (s)</span>
+										<span className="text-tiny font-medium text-ink-dull">
+											Startup Timeout (s)
+										</span>
 										<Input
 											type="number"
 											value={startupTimeout}
@@ -2401,7 +2826,9 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 										/>
 									</label>
 									<label className="block">
-										<span className="text-tiny font-medium text-ink-dull">Max Retries</span>
+										<span className="text-tiny font-medium text-ink-dull">
+											Max Retries
+										</span>
 										<Input
 											type="number"
 											value={maxRetries}
@@ -2415,19 +2842,41 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 
 							{/* Permissions */}
 							<div className="rounded-lg border border-app-line bg-app-box p-4">
-								<span className="text-sm font-medium text-ink">Permissions</span>
+								<span className="text-sm font-medium text-ink">
+									Permissions
+								</span>
 								<p className="mt-0.5 text-sm text-ink-dull">
 									Control which tools OpenCode workers can use
 								</p>
 								<div className="mt-3 flex flex-col gap-3">
-									{([
-										{ label: "File Edit", value: editPerm, setter: setEditPerm },
-										{ label: "Shell / Bash", value: bashPerm, setter: setBashPerm },
-										{ label: "Web Fetch", value: webfetchPerm, setter: setWebfetchPerm },
-									] as const).map(({ label, value, setter }) => (
-										<div key={label} className="flex items-center justify-between">
+									{(
+										[
+											{
+												label: "File Edit",
+												value: editPerm,
+												setter: setEditPerm,
+											},
+											{
+												label: "Shell / Bash",
+												value: bashPerm,
+												setter: setBashPerm,
+											},
+											{
+												label: "Web Fetch",
+												value: webfetchPerm,
+												setter: setWebfetchPerm,
+											},
+										] as const
+									).map(({label, value, setter}) => (
+										<div
+											key={label}
+											className="flex items-center justify-between"
+										>
 											<span className="text-sm text-ink">{label}</span>
-											<SelectRoot value={value} onValueChange={(v) => setter(v)}>
+											<SelectRoot
+												value={value}
+												onValueChange={(v) => setter(v)}
+											>
 												<SelectTrigger className="w-28">
 													<SelectValue />
 												</SelectTrigger>
@@ -2454,10 +2903,11 @@ function OpenCodeSection({ settings, isLoading }: GlobalSettingsSectionProps) {
 
 			{message && (
 				<div
-					className={`mt-4 rounded-md border px-3 py-2 text-sm ${message.type === "success"
+					className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
 							? "border-green-500/20 bg-green-500/10 text-green-400"
 							: "border-red-500/20 bg-red-500/10 text-red-400"
-						}`}
+					}`}
 				>
 					{message.text}
 				</div>
@@ -2480,10 +2930,13 @@ function pullableDockerImage(image: string | null): string {
 
 function UpdatesSection() {
 	const queryClient = useQueryClient();
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 	const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
 
-	const { data, isLoading, isFetching } = useQuery<UpdateStatus>({
+	const {data, isLoading, isFetching} = useQuery<UpdateStatus>({
 		queryKey: ["update-check"],
 		queryFn: api.updateCheck,
 		staleTime: 30_000,
@@ -2500,11 +2953,14 @@ function UpdatesSection() {
 					type: "success",
 				});
 			} else {
-				setMessage({ text: "No newer release found.", type: "success" });
+				setMessage({text: "No newer release found.", type: "success"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed to check updates: ${error.message}`, type: "error" });
+			setMessage({
+				text: `Failed to check updates: ${error.message}`,
+				type: "error",
+			});
 		},
 	});
 
@@ -2517,15 +2973,18 @@ function UpdatesSection() {
 					type: "success",
 				});
 				setTimeout(() => {
-					queryClient.invalidateQueries({ queryKey: ["update-check"] });
+					queryClient.invalidateQueries({queryKey: ["update-check"]});
 				}, 3000);
 				return;
 			}
 
-			setMessage({ text: result.error ?? "Update failed", type: "error" });
+			setMessage({text: result.error ?? "Update failed", type: "error"});
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed to apply update: ${error.message}`, type: "error" });
+			setMessage({
+				text: `Failed to apply update: ${error.message}`,
+				type: "error",
+			});
 		},
 	});
 
@@ -2545,18 +3004,25 @@ function UpdatesSection() {
 				document.body.removeChild(textarea);
 			}
 			setCopiedBlock(label);
-			setTimeout(() => setCopiedBlock((current) => (current === label ? null : current)), 1200);
+			setTimeout(
+				() => setCopiedBlock((current) => (current === label ? null : current)),
+				1200,
+			);
 		} catch (error: any) {
-			setMessage({ text: `Failed to copy commands: ${error.message}`, type: "error" });
+			setMessage({
+				text: `Failed to copy commands: ${error.message}`,
+				type: "error",
+			});
 		}
 	};
 
 	const deployment = data?.deployment ?? "native";
-	const deploymentLabel = deployment === "docker"
-		? "Docker"
-		: deployment === "hosted"
-			? "Hosted"
-			: "Native";
+	const deploymentLabel =
+		deployment === "docker"
+			? "Docker"
+			: deployment === "hosted"
+				? "Hosted"
+				: "Native";
 
 	const dockerComposeCommands = [
 		"docker compose pull spacebot",
@@ -2580,7 +3046,8 @@ function UpdatesSection() {
 			<div className="mb-6">
 				<h2 className="font-plex text-sm font-semibold text-ink">Updates</h2>
 				<p className="mt-1 text-sm text-ink-dull">
-					Check release status, trigger one-click Docker updates, and copy manual update commands.
+					Check release status, trigger one-click Docker updates, and copy
+					manual update commands.
 				</p>
 			</div>
 
@@ -2629,14 +3096,18 @@ function UpdatesSection() {
 							</div>
 							<div>
 								<p className="text-ink-faint">Last checked</p>
-								<p className="text-ink">{formatCheckedAt(data?.checked_at ?? null)}</p>
+								<p className="text-ink">
+									{formatCheckedAt(data?.checked_at ?? null)}
+								</p>
 							</div>
 						</div>
 
 						{data?.docker_image && (
-							<div className="mt-3 rounded border border-app-line/70 bg-app-darkBox/30 px-3 py-2">
+							<div className="mt-3 rounded border border-app-line/70 bg-app-dark-box/30 px-3 py-2">
 								<p className="text-tiny text-ink-faint">Container image</p>
-								<p className="font-mono text-xs text-ink">{data.docker_image}</p>
+								<p className="font-mono text-xs text-ink">
+									{data.docker_image}
+								</p>
 							</div>
 						)}
 
@@ -2656,7 +3127,9 @@ function UpdatesSection() {
 						<div className="rounded-lg border border-app-line bg-app-box p-4">
 							<div className="flex items-center justify-between gap-3">
 								<div>
-									<p className="text-sm font-medium text-ink">One-Click Docker Update</p>
+									<p className="text-sm font-medium text-ink">
+										One-Click Docker Update
+									</p>
 									<p className="mt-0.5 text-sm text-ink-dull">
 										Pull and swap to the latest release image from the web UI.
 									</p>
@@ -2674,69 +3147,95 @@ function UpdatesSection() {
 								</Button>
 							</div>
 							{!data?.update_available && (
-								<p className="mt-3 text-xs text-ink-faint">No update available yet.</p>
+								<p className="mt-3 text-xs text-ink-faint">
+									No update available yet.
+								</p>
 							)}
 							{!data?.can_apply && data?.cannot_apply_reason && (
-								<p className="mt-3 text-xs text-yellow-300">{data.cannot_apply_reason}</p>
+								<p className="mt-3 text-xs text-yellow-300">
+									{data.cannot_apply_reason}
+								</p>
 							)}
 							{data?.can_apply && (
 								<p className="mt-3 text-xs text-ink-faint">
-									Applying an update restarts this instance. The UI should reconnect in 10-30 seconds.
+									Applying an update restarts this instance. The UI should
+									reconnect in 10-30 seconds.
 								</p>
 							)}
 						</div>
 					)}
 
 					<div className="rounded-lg border border-app-line bg-app-box p-4">
-						<p className="text-sm font-medium text-ink">Manual Update Commands</p>
+						<p className="text-sm font-medium text-ink">
+							Manual Update Commands
+						</p>
 						<p className="mt-0.5 text-sm text-ink-dull">
-							Use these when one-click update is unavailable or when you prefer manual rollouts.
+							Use these when one-click update is unavailable or when you prefer
+							manual rollouts.
 						</p>
 
 						{deployment === "docker" && (
 							<div className="mt-3 flex flex-col gap-3">
-								<div className="rounded border border-app-line/70 bg-app-darkBox/30 p-3">
+								<div className="rounded border border-app-line/70 bg-app-dark-box/30 p-3">
 									<div className="mb-2 flex items-center justify-between">
-										<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">Docker Compose</p>
+										<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">
+											Docker Compose
+										</p>
 										<Button
-											onClick={() => handleCopy("compose", dockerComposeCommands.join("\n"))}
+											onClick={() =>
+												handleCopy("compose", dockerComposeCommands.join("\n"))
+											}
 											variant="outline"
 											size="md"
 										>
 											{copiedBlock === "compose" ? "Copied" : "Copy"}
 										</Button>
 									</div>
-									<pre className="overflow-x-auto text-xs text-ink"><code>{dockerComposeCommands.join("\n")}</code></pre>
+									<pre className="overflow-x-auto text-xs text-ink">
+										<code>{dockerComposeCommands.join("\n")}</code>
+									</pre>
 								</div>
-								<div className="rounded border border-app-line/70 bg-app-darkBox/30 p-3">
+								<div className="rounded border border-app-line/70 bg-app-dark-box/30 p-3">
 									<div className="mb-2 flex items-center justify-between">
-										<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">docker run</p>
+										<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">
+											docker run
+										</p>
 										<Button
-											onClick={() => handleCopy("docker-run", dockerRunCommands.join("\n"))}
+											onClick={() =>
+												handleCopy("docker-run", dockerRunCommands.join("\n"))
+											}
 											variant="outline"
 											size="md"
 										>
 											{copiedBlock === "docker-run" ? "Copied" : "Copy"}
 										</Button>
 									</div>
-									<pre className="overflow-x-auto text-xs text-ink"><code>{dockerRunCommands.join("\n")}</code></pre>
+									<pre className="overflow-x-auto text-xs text-ink">
+										<code>{dockerRunCommands.join("\n")}</code>
+									</pre>
 								</div>
 							</div>
 						)}
 
 						{deployment === "native" && (
-							<div className="mt-3 rounded border border-app-line/70 bg-app-darkBox/30 p-3">
+							<div className="mt-3 rounded border border-app-line/70 bg-app-dark-box/30 p-3">
 								<div className="mb-2 flex items-center justify-between">
-									<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">Source Install</p>
+									<p className="text-xs font-medium uppercase tracking-wider text-ink-faint">
+										Source Install
+									</p>
 									<Button
-										onClick={() => handleCopy("native", nativeCommands.join("\n"))}
+										onClick={() =>
+											handleCopy("native", nativeCommands.join("\n"))
+										}
 										variant="outline"
 										size="md"
 									>
 										{copiedBlock === "native" ? "Copied" : "Copy"}
 									</Button>
 								</div>
-								<pre className="overflow-x-auto text-xs text-ink"><code>{nativeCommands.join("\n")}</code></pre>
+								<pre className="overflow-x-auto text-xs text-ink">
+									<code>{nativeCommands.join("\n")}</code>
+								</pre>
 							</div>
 						)}
 
@@ -2757,10 +3256,11 @@ function UpdatesSection() {
 
 			{message && (
 				<div
-					className={`mt-4 rounded-md border px-3 py-2 text-sm ${message.type === "success"
+					className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+						message.type === "success"
 							? "border-green-500/20 bg-green-500/10 text-green-400"
 							: "border-red-500/20 bg-red-500/10 text-red-400"
-						}`}
+					}`}
 				>
 					{message.text}
 				</div>
@@ -2788,7 +3288,7 @@ function parseChangelog(raw: string): ChangelogRelease[] {
 				releases.push(current);
 				lines.length = 0;
 			}
-			current = { version: match[1], body: "" };
+			current = {version: match[1], body: ""};
 			continue;
 		}
 		if (current) lines.push(line);
@@ -2801,7 +3301,7 @@ function parseChangelog(raw: string): ChangelogRelease[] {
 }
 
 function ChangelogSection() {
-	const { data: changelog, isLoading } = useQuery<string>({
+	const {data: changelog, isLoading} = useQuery<string>({
 		queryKey: ["changelog"],
 		queryFn: api.changelog,
 		staleTime: 60_000 * 60, // 1 hour — changelog is baked into the binary
@@ -2834,7 +3334,9 @@ function ChangelogSection() {
 								{release.version}
 							</h3>
 							{release.body && (
-								<Markdown className="text-sm text-ink-dull">{release.body}</Markdown>
+								<Markdown className="text-sm text-ink-dull">
+									{release.body}
+								</Markdown>
 							)}
 						</div>
 					))}
@@ -2853,10 +3355,13 @@ function ConfigFileSection() {
 	const [originalContent, setOriginalContent] = useState("");
 	const [currentContent, setCurrentContent] = useState("");
 	const [validationError, setValidationError] = useState<string | null>(null);
-	const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+	const [message, setMessage] = useState<{
+		text: string;
+		type: "success" | "error";
+	} | null>(null);
 	const [editorLoaded, setEditorLoaded] = useState(false);
 
-	const { data, isLoading } = useQuery({
+	const {data, isLoading} = useQuery({
 		queryKey: ["raw-config"],
 		queryFn: api.rawConfig,
 		staleTime: 5_000,
@@ -2867,19 +3372,19 @@ function ConfigFileSection() {
 		onSuccess: (result) => {
 			if (result.success) {
 				setOriginalContent(currentContent);
-				setMessage({ text: result.message, type: "success" });
+				setMessage({text: result.message, type: "success"});
 				setValidationError(null);
 				// Invalidate all config-related queries so other tabs pick up changes
-				queryClient.invalidateQueries({ queryKey: ["providers"] });
-				queryClient.invalidateQueries({ queryKey: ["global-settings"] });
-				queryClient.invalidateQueries({ queryKey: ["agents"] });
-				queryClient.invalidateQueries({ queryKey: ["overview"] });
+				queryClient.invalidateQueries({queryKey: ["providers"]});
+				queryClient.invalidateQueries({queryKey: ["global-settings"]});
+				queryClient.invalidateQueries({queryKey: ["agents"]});
+				queryClient.invalidateQueries({queryKey: ["overview"]});
 			} else {
-				setMessage({ text: result.message, type: "error" });
+				setMessage({text: result.message, type: "error"});
 			}
 		},
 		onError: (error) => {
-			setMessage({ text: `Failed: ${error.message}`, type: "error" });
+			setMessage({text: `Failed: ${error.message}`, type: "error"});
 		},
 	});
 
@@ -2945,14 +3450,16 @@ function ConfigFileSection() {
 					themeMod.oneDark,
 					theme,
 					updateListener,
-					viewMod.keymap.of([{
-						key: "Mod-s",
-						run: () => {
-							// Trigger save via DOM event since we can't access React state here
-							editorRef.current?.dispatchEvent(new CustomEvent("cm-save"));
-							return true;
+					viewMod.keymap.of([
+						{
+							key: "Mod-s",
+							run: () => {
+								// Trigger save via DOM event since we can't access React state here
+								editorRef.current?.dispatchEvent(new CustomEvent("cm-save"));
+								return true;
+							},
 						},
-					}]),
+					]),
 				],
 			});
 
@@ -2996,7 +3503,7 @@ function ConfigFileSection() {
 		if (!viewRef.current) return;
 		const view = viewRef.current;
 		view.dispatch({
-			changes: { from: 0, to: view.state.doc.length, insert: originalContent },
+			changes: {from: 0, to: view.state.doc.length, insert: originalContent},
 		});
 		setCurrentContent(originalContent);
 		setValidationError(null);
@@ -3008,7 +3515,8 @@ function ConfigFileSection() {
 			{/* Description + actions */}
 			<div className="flex items-center justify-between px-6 py-4 border-b border-app-line/30">
 				<p className="text-sm text-ink-dull">
-					Edit the raw configuration file. Changes are validated as TOML before saving.
+					Edit the raw configuration file. Changes are validated as TOML before
+					saving.
 				</p>
 				<div className="flex items-center gap-2 flex-shrink-0 ml-4">
 					{isDirty && (
@@ -3029,12 +3537,15 @@ function ConfigFileSection() {
 
 			{/* Validation / status bar */}
 			{(validationError || message) && (
-				<div className={`border-b px-6 py-2 text-sm ${validationError
-						? "border-red-500/20 bg-red-500/5 text-red-400"
-						: message?.type === "success"
-							? "border-green-500/20 bg-green-500/5 text-green-400"
-							: "border-red-500/20 bg-red-500/5 text-red-400"
-					}`}>
+				<div
+					className={`border-b px-6 py-2 text-sm ${
+						validationError
+							? "border-red-500/20 bg-red-500/5 text-red-400"
+							: message?.type === "success"
+								? "border-green-500/20 bg-green-500/5 text-green-400"
+								: "border-red-500/20 bg-red-500/5 text-red-400"
+					}`}
+				>
 					{validationError ? `Syntax error: ${validationError}` : message?.text}
 				</div>
 			)}
@@ -3090,7 +3601,10 @@ function ProviderCard({
 						<span className="text-sm font-medium text-ink">{name}</span>
 						{configured && (
 							<span className="inline-flex items-center">
-								<span className="h-2 w-2 rounded-full bg-green-400" aria-hidden="true" />
+								<span
+									className="h-2 w-2 rounded-full bg-green-400"
+									aria-hidden="true"
+								/>
 								<span className="sr-only">Configured</span>
 							</span>
 						)}
@@ -3105,7 +3619,12 @@ function ProviderCard({
 						{primaryLabel}
 					</Button>
 					{shouldShowRemove && (
-						<Button onClick={onRemove} variant="outline" size="md" loading={removing}>
+						<Button
+							onClick={onRemove}
+							variant="outline"
+							size="md"
+							loading={removing}
+						>
 							Remove
 						</Button>
 					)}
@@ -3120,8 +3639,8 @@ interface ChatGptOAuthDialogProps {
 	onOpenChange: (open: boolean) => void;
 	isRequesting: boolean;
 	isPolling: boolean;
-	message: { text: string; type: "success" | "error" } | null;
-	deviceCodeInfo: { userCode: string; verificationUrl: string } | null;
+	message: {text: string; type: "success" | "error"} | null;
+	deviceCodeInfo: {userCode: string; verificationUrl: string} | null;
 	deviceCodeCopied: boolean;
 	onCopyDeviceCode: () => void;
 	onOpenDeviceLogin: () => void;
@@ -3150,8 +3669,17 @@ function ChatGptOAuthDialog({
 					</DialogTitle>
 					{!message && (
 						<DialogDescription>
-							Copy the device code below, then sign in to your OpenAI account to authorize access.
-							You must first <a href="https://chatgpt.com/security-settings" target="_blank" rel="noopener noreferrer" className="underline text-accent hover:text-accent/80">enable device code login</a> in your ChatGPT security settings.
+							Copy the device code below, then sign in to your OpenAI account to
+							authorize access. You must first{" "}
+							<a
+								href="https://chatgpt.com/security-settings"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline text-accent hover:text-accent/80"
+							>
+								enable device code login
+							</a>{" "}
+							in your ChatGPT security settings.
 						</DialogDescription>
 					)}
 				</DialogHeader>
@@ -3160,9 +3688,10 @@ function ChatGptOAuthDialog({
 					{message && !deviceCodeInfo ? (
 						/* Completed state — success or error with no active flow */
 						<div
-							className={`rounded-md border px-3 py-2 text-sm ${message.type === "success"
-								? "border-green-500/20 bg-green-500/10 text-green-400"
-								: "border-red-500/20 bg-red-500/10 text-red-400"
+							className={`rounded-md border px-3 py-2 text-sm ${
+								message.type === "success"
+									? "border-green-500/20 bg-green-500/10 text-green-400"
+									: "border-red-500/20 bg-red-500/10 text-red-400"
 							}`}
 						>
 							{message.text}
@@ -3176,23 +3705,35 @@ function ChatGptOAuthDialog({
 						<div className="space-y-4">
 							<div className="rounded-md border border-app-line p-3">
 								<div className="flex items-center gap-2">
-									<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent">1</span>
+									<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent">
+										1
+									</span>
 									<p className="text-sm text-ink-dull">Copy this device code</p>
 								</div>
 								<div className="mt-2.5 flex items-center gap-2 pl-7">
 									<code className="rounded border border-app-line bg-app-darkerBox px-3 py-1.5 font-mono text-base tracking-widest text-ink">
 										{deviceCodeInfo.userCode}
 									</code>
-									<Button onClick={onCopyDeviceCode} size="md" variant={deviceCodeCopied ? "secondary" : "outline"}>
+									<Button
+										onClick={onCopyDeviceCode}
+										size="md"
+										variant={deviceCodeCopied ? "secondary" : "outline"}
+									>
 										{deviceCodeCopied ? "Copied" : "Copy"}
 									</Button>
 								</div>
 							</div>
 
-							<div className={`rounded-md border border-app-line p-3 ${!deviceCodeCopied ? "opacity-50" : ""}`}>
+							<div
+								className={`rounded-md border border-app-line p-3 ${!deviceCodeCopied ? "opacity-50" : ""}`}
+							>
 								<div className="flex items-center gap-2">
-									<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent">2</span>
-									<p className="text-sm text-ink-dull">Open OpenAI and paste the code</p>
+									<span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent">
+										2
+									</span>
+									<p className="text-sm text-ink-dull">
+										Open OpenAI and paste the code
+									</p>
 								</div>
 								<div className="mt-2.5 pl-7">
 									<Button
@@ -3215,9 +3756,10 @@ function ChatGptOAuthDialog({
 
 							{message && (
 								<div
-									className={`rounded-md border px-3 py-2 text-sm ${message.type === "success"
-										? "border-green-500/20 bg-green-500/10 text-green-400"
-										: "border-red-500/20 bg-red-500/10 text-red-400"
+									className={`rounded-md border px-3 py-2 text-sm ${
+										message.type === "success"
+											? "border-green-500/20 bg-green-500/10 text-green-400"
+											: "border-red-500/20 bg-red-500/10 text-red-400"
 									}`}
 								>
 									{message.text}
@@ -3236,7 +3778,11 @@ function ChatGptOAuthDialog({
 							</Button>
 						) : (
 							<>
-								<Button onClick={() => onOpenChange(false)} variant="outline" size="md">
+								<Button
+									onClick={() => onOpenChange(false)}
+									variant="outline"
+									size="md"
+								>
 									Close
 								</Button>
 								<Button
@@ -3251,7 +3797,11 @@ function ChatGptOAuthDialog({
 						)
 					) : (
 						<>
-							<Button onClick={() => onOpenChange(false)} variant="outline" size="md">
+							<Button
+								onClick={() => onOpenChange(false)}
+								variant="outline"
+								size="md"
+							>
 								Cancel
 							</Button>
 							{deviceCodeInfo && (

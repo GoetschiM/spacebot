@@ -117,8 +117,8 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 			{providersData && !providersData.has_any && agents.length > 0 && (
 				<div className="mx-6 mt-4 flex items-center justify-between gap-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3">
 					<p className="text-sm text-amber-200">
-						Agents are configured, but no provider credentials are available. Add or unlock
-						secrets to bring agents online.
+						Agents are configured, but no provider credentials are available.
+						Add or unlock secrets to bring agents online.
 					</p>
 					<Link
 						to="/settings"
@@ -144,9 +144,12 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 						{providersData && !providersData.has_any ? (
 							<div className="flex flex-col items-center gap-6 max-w-md text-center">
 								<div className="flex flex-col items-center gap-4">
-									<h2 className="text-lg font-medium text-ink">Welcome to Spacebot</h2>
+									<h2 className="text-lg font-medium text-ink">
+										Welcome to Spacebot
+									</h2>
 									<p className="text-sm text-ink-faint leading-relaxed">
-										An agentic AI system where every process has a dedicated role. To get started, connect an LLM provider.
+										An agentic AI system where every process has a dedicated
+										role. To get started, connect an LLM provider.
 									</p>
 									<div className="mt-1 flex items-center gap-3">
 										<Link
@@ -167,11 +170,13 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 										</a>
 									</div>
 								</div>
-								<div className="flex items-start gap-3 rounded-lg border border-app-line bg-app-darkBox/50 px-4 py-3 text-left">
+								<div className="flex items-start gap-3 rounded-lg border border-app-line bg-app-dark-box/50 px-4 py-3 text-left">
 									<Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
 									<p className="text-tiny text-ink-faint leading-relaxed">
 										<span className="font-medium text-ink-dull">Pro tip:</span>{" "}
-										Once set up, you can talk to the Cortex from any agent page to get help with configuration, debugging, or learning how Spacebot works.
+										Once set up, you can talk to the Cortex from any agent page
+										to get help with configuration, debugging, or learning how
+										Spacebot works.
 									</p>
 								</div>
 							</div>
@@ -193,7 +198,11 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 			</div>
 
 			{agents[0] && (
-				<CreateAgentDialog open={createOpen} onOpenChange={setCreateOpen} agentId={agents[0].id} />
+				<CreateAgentDialog
+					open={createOpen}
+					onOpenChange={setCreateOpen}
+					agentId={agents[0].id}
+				/>
 			)}
 		</div>
 	);

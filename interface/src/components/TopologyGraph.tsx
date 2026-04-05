@@ -248,14 +248,14 @@ function ProfileNode({data, selected}: NodeProps) {
 						seed={avatarSeed}
 						name={primaryName}
 						size={48}
-						className="rounded-full border-[3px] border-app-darkBox"
+						className="rounded-full border-[3px] border-app-dark-box"
 						gradientStart={gradientStart ?? undefined}
 						gradientEnd={gradientEnd ?? undefined}
 						avatarUrl={isAgent && nodeAvatarUrl ? nodeAvatarUrl : undefined}
 					/>
 					{isAgent && (
 						<div
-							className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2px] border-app-darkBox ${
+							className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2px] border-app-dark-box ${
 								isOnline ? "bg-green-500" : "bg-gray-500"
 							}`}
 						/>
@@ -357,7 +357,7 @@ function ProfileNode({data, selected}: NodeProps) {
 									? Position.Left
 									: Position.Right
 					}
-					className={`!h-2.5 !w-2.5 !border-2 !border-app-darkBox ${connected[side] ? "!bg-accent" : "!bg-app-line"}`}
+					className={`!h-2.5 !w-2.5 !border-2 !border-app-dark-box ${connected[side] ? "!bg-accent" : "!bg-app-line"}`}
 				/>
 			))}
 			{(["top", "bottom", "left", "right"] as const).map((side) => (
@@ -374,7 +374,7 @@ function ProfileNode({data, selected}: NodeProps) {
 									? Position.Left
 									: Position.Right
 					}
-					className={`!h-2.5 !w-2.5 !border-2 !border-app-darkBox ${connected[side] ? "!bg-accent" : "!bg-app-line"}`}
+					className={`!h-2.5 !w-2.5 !border-2 !border-app-dark-box ${connected[side] ? "!bg-accent" : "!bg-app-line"}`}
 				/>
 			))}
 		</div>
@@ -506,7 +506,7 @@ function EdgeConfigPanel({
 			animate={{opacity: 1, y: 0}}
 			exit={{opacity: 0, y: 8}}
 			transition={{duration: 0.15}}
-			className="absolute right-4 top-4 z-20 w-64 rounded-lg border border-app-line/50 bg-app-darkBox/95 p-4 shadow-xl backdrop-blur-sm"
+			className="absolute right-4 top-4 z-20 w-64 rounded-lg border border-app-line/50 bg-app-dark-box/95 p-4 shadow-xl backdrop-blur-sm"
 		>
 			<div className="mb-3 flex items-center justify-between">
 				<span className="text-sm font-medium text-ink">Link Settings</span>
@@ -793,10 +793,10 @@ function HumanEditDialog({
 					</div>
 					{/* Right column — description markdown editor */}
 					<div className="flex-1 flex flex-col min-w-0">
-						<div className="flex items-center justify-between border-b border-app-line/50 bg-app-darkBox/20 px-5 py-2.5 shrink-0">
+						<div className="flex items-center justify-between border-b border-app-line/50 bg-app-dark-box/20 px-5 py-2.5 shrink-0">
 							<div className="flex items-center gap-3">
 								<h3 className="text-sm font-medium text-ink">Description</h3>
-								<span className="rounded bg-app-darkBox px-1.5 py-0.5 font-mono text-tiny text-ink-faint">
+								<span className="rounded bg-app-dark-box px-1.5 py-0.5 font-mono text-tiny text-ink-faint">
 									Markdown
 								</span>
 							</div>
@@ -807,7 +807,7 @@ function HumanEditDialog({
 										className={cx(
 											"px-2 py-0.5 rounded-l transition-colors",
 											descriptionMode === "edit"
-												? "bg-app-darkBox text-ink"
+												? "bg-app-dark-box text-ink"
 												: "text-ink-faint hover:text-ink",
 										)}
 									>
@@ -818,7 +818,7 @@ function HumanEditDialog({
 										className={cx(
 											"px-2 py-0.5 rounded-r transition-colors",
 											descriptionMode === "preview"
-												? "bg-app-darkBox text-ink"
+												? "bg-app-dark-box text-ink"
 												: "text-ink-faint hover:text-ink",
 										)}
 									>
@@ -835,7 +835,7 @@ function HumanEditDialog({
 									placeholder={
 										"Write a full description of this person...\n\nBackground, preferences, communication style, timezone, working hours, areas of expertise — anything that helps agents interact with them effectively."
 									}
-									className="h-full w-full resize-none border-transparent bg-app-darkBox/30 px-4 py-3 font-mono leading-relaxed placeholder:text-ink-faint/40"
+									className="h-full w-full resize-none border-transparent bg-app-dark-box/30 px-4 py-3 font-mono leading-relaxed placeholder:text-ink-faint/40"
 									spellCheck={false}
 								/>
 							) : (
@@ -966,7 +966,7 @@ function GroupConfigPanel({
 			animate={{opacity: 1, y: 0}}
 			exit={{opacity: 0, y: 8}}
 			transition={{duration: 0.15}}
-			className="absolute right-4 top-4 z-20 w-64 rounded-lg border border-app-line/50 bg-app-darkBox/95 p-4 shadow-xl backdrop-blur-sm"
+			className="absolute right-4 top-4 z-20 w-64 rounded-lg border border-app-line/50 bg-app-dark-box/95 p-4 shadow-xl backdrop-blur-sm"
 		>
 			<div className="mb-3 flex items-center justify-between">
 				<span className="text-sm font-medium text-ink">Group Settings</span>
@@ -1631,12 +1631,12 @@ function TopologyGraphInner({activeEdges, agents}: TopologyGraphInnerProps) {
 				<Background color="hsla(230, 8%, 14%, 0.5)" gap={20} size={1} />
 				<Controls
 					showInteractive={false}
-					className="!bg-app-darkBox/80 !border-app-line !backdrop-blur-sm [&>button]:!bg-transparent [&>button]:!border-app-line [&>button]:!text-ink-dull [&>button:hover]:!bg-app-hover"
+					className="!bg-app-dark-box/80 !border-app-line !backdrop-blur-sm [&>button]:!bg-transparent [&>button]:!border-app-line [&>button]:!text-ink-dull [&>button:hover]:!bg-app-hover"
 				/>
 			</ReactFlow>
 
 			{/* Legend + controls */}
-			<div className="absolute bottom-4 left-4 z-10 rounded-md bg-app-darkBox/80 p-3 backdrop-blur-sm">
+			<div className="absolute bottom-4 left-4 z-10 rounded-md bg-app-dark-box/80 p-3 backdrop-blur-sm">
 				<div className="mb-2 text-tiny text-ink-faint">
 					Drag between handles to link
 				</div>

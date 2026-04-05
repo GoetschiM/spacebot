@@ -1,26 +1,56 @@
-import { useCallback, useEffect, useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type AgentConfigResponse, type AgentConfigUpdateRequest } from "@/api/client";
-import { Button, Input, TextArea, NumberStepper, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@spacedrive/primitives";
-import { SettingSidebarButton } from "@/ui/SettingSidebarButton";
-import { Switch } from "@spacedrive/primitives";
-import { cx } from "class-variance-authority";
-import { ModelSelect } from "@/components/ModelSelect";
-import { TagInput } from "@/components/TagInput";
-import { Markdown } from "@/components/Markdown";
-import { ProfileAvatar, seedGradient } from "@/components/ProfileAvatar";
+import {useCallback, useEffect, useState, useRef} from "react";
+import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
+import {
+	api,
+	type AgentConfigResponse,
+	type AgentConfigUpdateRequest,
+} from "@/api/client";
+import {
+	Button,
+	Input,
+	TextArea,
+	NumberStepper,
+	SelectRoot,
+	SelectTrigger,
+	SelectValue,
+	SelectContent,
+	SelectItem,
+} from "@spacedrive/primitives";
+import {SettingSidebarButton} from "@/ui/SettingSidebarButton";
+import {Switch} from "@spacedrive/primitives";
+import {cx} from "class-variance-authority";
+import {ModelSelect} from "@/components/ModelSelect";
+import {TagInput} from "@/components/TagInput";
+import {Markdown} from "@/components/Markdown";
+import {ProfileAvatar, seedGradient} from "@/components/ProfileAvatar";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useSearch, useNavigate } from "@tanstack/react-router";
-
+import {motion, AnimatePresence} from "framer-motion";
+import {useSearch, useNavigate} from "@tanstack/react-router";
 
 function supportsAdaptiveThinking(modelId: string): boolean {
 	const id = modelId.toLowerCase();
-	return id.includes("opus-4-6") || id.includes("opus-4.6")
-		|| id.includes("sonnet-4-6") || id.includes("sonnet-4.6");
+	return (
+		id.includes("opus-4-6") ||
+		id.includes("opus-4.6") ||
+		id.includes("sonnet-4-6") ||
+		id.includes("sonnet-4.6")
+	);
 }
 
-type SectionId = "general" | "soul" | "identity" | "role" | "routing" | "tuning" | "compaction" | "cortex" | "coalesce" | "memory" | "browser" | "sandbox" | "projects";
+type SectionId =
+	| "general"
+	| "soul"
+	| "identity"
+	| "role"
+	| "routing"
+	| "tuning"
+	| "compaction"
+	| "cortex"
+	| "coalesce"
+	| "memory"
+	| "browser"
+	| "sandbox"
+	| "projects";
 
 const SECTIONS: {
 	id: SectionId;
@@ -29,20 +59,111 @@ const SECTIONS: {
 	description: string;
 	detail: string;
 }[] = [
-	{ id: "general", label: "General", group: "general", description: "Agent metadata", detail: "The agent's display name and role. The display name is shown in the UI and messaging platforms. The role describes the agent's purpose (e.g. Research Assistant, Code Reviewer)." },
-	{ id: "soul", label: "Soul", group: "identity", description: "SOUL.md", detail: "Defines the agent's personality, values, communication style, and behavioral boundaries. This is the core of who the agent is." },
-	{ id: "identity", label: "Identity", group: "identity", description: "IDENTITY.md", detail: "The agent's name, nature, and purpose. How it introduces itself and what it understands its role to be." },
-	{ id: "role", label: "Role", group: "identity", description: "ROLE.md", detail: "The agent's responsibilities, scope, expected outcomes, and escalation rules. Defines what the agent does and doesn't do." },
-	{ id: "routing", label: "Model Routing", group: "config", description: "Which models each process uses", detail: "Controls which LLM model is used for each process type. Channels handle user-facing conversation, branches do thinking, workers execute tasks, the compactor summarizes context, cortex observes system state, and voice transcribes audio attachments before the channel turn." },
-	{ id: "tuning", label: "Tuning", group: "config", description: "Turn limits, context window, branches", detail: "Core limits that control how much work the agent does per message. Max turns caps LLM iterations per channel message. Context window sets the token budget. Branch limits control parallel thinking." },
-	{ id: "compaction", label: "Compaction", group: "config", description: "Context compaction thresholds", detail: "Thresholds that trigger context summarization as the conversation grows. Background kicks in early, aggressive compresses harder, and emergency truncates without LLM involvement. All values are fractions of the context window." },
-	{ id: "cortex", label: "Cortex", group: "config", description: "System observer settings", detail: "The cortex monitors active processes and generates memory bulletins. Tick interval controls observation frequency. Timeouts determine when stuck workers or branches get cancelled. The circuit breaker auto-disables after consecutive failures." },
-	{ id: "coalesce", label: "Coalesce", group: "config", description: "Message batching", detail: "When multiple messages arrive in quick succession, coalescing batches them into a single LLM turn. This prevents the agent from responding to each message individually in fast-moving conversations." },
-	{ id: "memory", label: "Memory Persistence", group: "config", description: "Auto-save interval", detail: "Spawns a silent background branch at regular intervals to recall existing memories and save new ones from the recent conversation. Runs without blocking the channel." },
-	{ id: "browser", label: "Browser", group: "config", description: "Chrome automation", detail: "Controls browser automation tools available to workers. When enabled, workers can navigate web pages, take screenshots, and interact with sites. JavaScript evaluation is a separate permission." },
+	{
+		id: "general",
+		label: "General",
+		group: "general",
+		description: "Agent metadata",
+		detail:
+			"The agent's display name and role. The display name is shown in the UI and messaging platforms. The role describes the agent's purpose (e.g. Research Assistant, Code Reviewer).",
+	},
+	{
+		id: "soul",
+		label: "Soul",
+		group: "identity",
+		description: "SOUL.md",
+		detail:
+			"Defines the agent's personality, values, communication style, and behavioral boundaries. This is the core of who the agent is.",
+	},
+	{
+		id: "identity",
+		label: "Identity",
+		group: "identity",
+		description: "IDENTITY.md",
+		detail:
+			"The agent's name, nature, and purpose. How it introduces itself and what it understands its role to be.",
+	},
+	{
+		id: "role",
+		label: "Role",
+		group: "identity",
+		description: "ROLE.md",
+		detail:
+			"The agent's responsibilities, scope, expected outcomes, and escalation rules. Defines what the agent does and doesn't do.",
+	},
+	{
+		id: "routing",
+		label: "Model Routing",
+		group: "config",
+		description: "Which models each process uses",
+		detail:
+			"Controls which LLM model is used for each process type. Channels handle user-facing conversation, branches do thinking, workers execute tasks, the compactor summarizes context, cortex observes system state, and voice transcribes audio attachments before the channel turn.",
+	},
+	{
+		id: "tuning",
+		label: "Tuning",
+		group: "config",
+		description: "Turn limits, context window, branches",
+		detail:
+			"Core limits that control how much work the agent does per message. Max turns caps LLM iterations per channel message. Context window sets the token budget. Branch limits control parallel thinking.",
+	},
+	{
+		id: "compaction",
+		label: "Compaction",
+		group: "config",
+		description: "Context compaction thresholds",
+		detail:
+			"Thresholds that trigger context summarization as the conversation grows. Background kicks in early, aggressive compresses harder, and emergency truncates without LLM involvement. All values are fractions of the context window.",
+	},
+	{
+		id: "cortex",
+		label: "Cortex",
+		group: "config",
+		description: "System observer settings",
+		detail:
+			"The cortex monitors active processes and generates memory bulletins. Tick interval controls observation frequency. Timeouts determine when stuck workers or branches get cancelled. The circuit breaker auto-disables after consecutive failures.",
+	},
+	{
+		id: "coalesce",
+		label: "Coalesce",
+		group: "config",
+		description: "Message batching",
+		detail:
+			"When multiple messages arrive in quick succession, coalescing batches them into a single LLM turn. This prevents the agent from responding to each message individually in fast-moving conversations.",
+	},
+	{
+		id: "memory",
+		label: "Memory Persistence",
+		group: "config",
+		description: "Auto-save interval",
+		detail:
+			"Spawns a silent background branch at regular intervals to recall existing memories and save new ones from the recent conversation. Runs without blocking the channel.",
+	},
+	{
+		id: "browser",
+		label: "Browser",
+		group: "config",
+		description: "Chrome automation",
+		detail:
+			"Controls browser automation tools available to workers. When enabled, workers can navigate web pages, take screenshots, and interact with sites. JavaScript evaluation is a separate permission.",
+	},
 
-	{ id: "sandbox", label: "Sandbox", group: "config", description: "Process containment", detail: "OS-level filesystem containment for shell tool subprocesses. When enabled, worker processes run inside a kernel-enforced sandbox (bubblewrap on Linux, sandbox-exec on macOS) with an allowlist-only filesystem — only system paths, the workspace, and explicitly configured extra paths are accessible." },
-	{ id: "projects", label: "Projects", group: "config", description: "Workspace management", detail: "Controls how the agent manages project workspaces, git repos, and worktrees. Use worktrees for parallel feature branches, auto-discover to scan for repos on project creation, and set a disk usage warning threshold." },
+	{
+		id: "sandbox",
+		label: "Sandbox",
+		group: "config",
+		description: "Process containment",
+		detail:
+			"OS-level filesystem containment for shell tool subprocesses. When enabled, worker processes run inside a kernel-enforced sandbox (bubblewrap on Linux, sandbox-exec on macOS) with an allowlist-only filesystem — only system paths, the workspace, and explicitly configured extra paths are accessible.",
+	},
+	{
+		id: "projects",
+		label: "Projects",
+		group: "config",
+		description: "Workspace management",
+		detail:
+			"Controls how the agent manages project workspaces, git repos, and worktrees. Use worktrees for parallel feature branches, auto-discover to scan for repos on project creation, and set a disk usage warning threshold.",
+	},
 ];
 
 interface AgentConfigProps {
@@ -53,21 +174,24 @@ const isIdentityField = (id: SectionId): id is "soul" | "identity" | "role" => {
 	return id === "soul" || id === "identity" || id === "role";
 };
 
-const getIdentityField = (data: { soul: string | null; identity: string | null; role: string | null }, field: SectionId): string | null => {
+const getIdentityField = (
+	data: {soul: string | null; identity: string | null; role: string | null},
+	field: SectionId,
+): string | null => {
 	if (isIdentityField(field)) {
 		return data[field];
 	}
 	return null;
 };
 
-export function AgentConfig({ agentId }: AgentConfigProps) {
+export function AgentConfig({agentId}: AgentConfigProps) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const search = useSearch({from: "/agents/$agentId/config"}) as {tab?: string};
 	const [activeSection, setActiveSection] = useState<SectionId>("general");
 	const [dirty, setDirty] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const saveHandlerRef = useRef<{ save?: () => void; revert?: () => void }>({});
+	const saveHandlerRef = useRef<{save?: () => void; revert?: () => void}>({});
 
 	// Sync activeSection with URL search param
 	useEffect(() => {
@@ -81,7 +205,11 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 
 	const handleSectionChange = (section: SectionId) => {
 		setActiveSection(section);
-		navigate({to: "/agents/$agentId/config", params: {agentId}, search: {tab: section}});
+		navigate({
+			to: "/agents/$agentId/config",
+			params: {agentId},
+			search: {tab: section},
+		});
 	};
 
 	const agentsQuery = useQuery({
@@ -103,11 +231,15 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 	});
 
 	const agentMutation = useMutation({
-		mutationFn: (update: { display_name?: string; role?: string; gradient_start?: string; gradient_end?: string }) =>
-			api.updateAgent(agentId, update),
+		mutationFn: (update: {
+			display_name?: string;
+			role?: string;
+			gradient_start?: string;
+			gradient_end?: string;
+		}) => api.updateAgent(agentId, update),
 		onMutate: () => setSaving(true),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["agents"] });
+			queryClient.invalidateQueries({queryKey: ["agents"]});
 			setDirty(false);
 			setSaving(false);
 		},
@@ -115,7 +247,10 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 	});
 
 	const identityMutation = useMutation({
-		mutationFn: (update: { field: "soul" | "identity" | "role"; content: string }) =>
+		mutationFn: (update: {
+			field: "soul" | "identity" | "role";
+			content: string;
+		}) =>
 			api.updateIdentity({
 				agent_id: agentId,
 				[update.field]: update.content,
@@ -130,16 +265,20 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 	});
 
 	const configMutation = useMutation({
-		mutationFn: (update: AgentConfigUpdateRequest) => api.updateAgentConfig(update),
+		mutationFn: (update: AgentConfigUpdateRequest) =>
+			api.updateAgentConfig(update),
 		onMutate: (update) => {
 			setSaving(true);
 			// Optimistically merge the sent values into the cache so the UI
 			// reflects the change immediately (covers fields the backend
 			// doesn't yet return in its response, like sandbox).
-			const previous = queryClient.getQueryData<AgentConfigResponse>(["agent-config", agentId]);
+			const previous = queryClient.getQueryData<AgentConfigResponse>([
+				"agent-config",
+				agentId,
+			]);
 			if (previous) {
-				const { agent_id: _, ...sections } = update;
-				const merged = { ...previous } as unknown as Record<string, unknown>;
+				const {agent_id: _, ...sections} = update;
+				const merged = {...previous} as unknown as Record<string, unknown>;
 				const prev = previous as unknown as Record<string, unknown>;
 				for (const [key, value] of Object.entries(sections)) {
 					if (value !== undefined) {
@@ -149,14 +288,23 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 						};
 					}
 				}
-				queryClient.setQueryData(["agent-config", agentId], merged as unknown as AgentConfigResponse);
+				queryClient.setQueryData(
+					["agent-config", agentId],
+					merged as unknown as AgentConfigResponse,
+				);
 			}
 		},
 		onSuccess: (result) => {
 			// Merge server response with cache to preserve fields the backend
 			// doesn't yet return (e.g. sandbox).
-			const previous = queryClient.getQueryData<AgentConfigResponse>(["agent-config", agentId]);
-			queryClient.setQueryData(["agent-config", agentId], { ...previous, ...result });
+			const previous = queryClient.getQueryData<AgentConfigResponse>([
+				"agent-config",
+				agentId,
+			]);
+			queryClient.setQueryData(["agent-config", agentId], {
+				...previous,
+				...result,
+			});
 			setDirty(false);
 			setSaving(false);
 		},
@@ -171,8 +319,10 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 		saveHandlerRef.current.revert?.();
 	}, []);
 
-	const isLoading = agentsQuery.isLoading || identityQuery.isLoading || configQuery.isLoading;
-	const isError = agentsQuery.isError || identityQuery.isError || configQuery.isError;
+	const isLoading =
+		agentsQuery.isLoading || identityQuery.isLoading || configQuery.isLoading;
+	const isError =
+		agentsQuery.isError || identityQuery.isError || configQuery.isError;
 
 	if (isLoading) {
 		return (
@@ -201,31 +351,36 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 	return (
 		<div className="flex h-full relative">
 			{/* Sidebar */}
-			<div className="flex w-52 flex-shrink-0 flex-col border-r border-app-line/50 bg-app-darkBox/20 overflow-y-auto">
-			{/* General Group */}
-			<div className="flex flex-col gap-0.5 px-2 pt-3">
-				{SECTIONS.filter((s) => s.group === "general").map((section) => {
-					const isActive = activeSection === section.id;
-					return (
-						<SettingSidebarButton
-							key={section.id}
-							onClick={() => handleSectionChange(section.id)}
-							active={isActive}
-						>
-							<span className="flex-1">{section.label}</span>
-						</SettingSidebarButton>
-					);
-				})}
-			</div>
+			<div className="flex w-52 flex-shrink-0 flex-col border-r border-app-line/50 bg-app-dark-box/20 overflow-y-auto">
+				{/* General Group */}
+				<div className="flex flex-col gap-0.5 px-2 pt-3">
+					{SECTIONS.filter((s) => s.group === "general").map((section) => {
+						const isActive = activeSection === section.id;
+						return (
+							<SettingSidebarButton
+								key={section.id}
+								onClick={() => handleSectionChange(section.id)}
+								active={isActive}
+							>
+								<span className="flex-1">{section.label}</span>
+							</SettingSidebarButton>
+						);
+					})}
+				</div>
 
-			{/* Identity Group */}
-			<div className="px-3 pb-1 pt-4">
-				<span className="text-tiny font-medium uppercase tracking-wider text-ink-faint">Identity</span>
-			</div>
-					<div className="flex flex-col gap-0.5 px-2">
+				{/* Identity Group */}
+				<div className="px-3 pb-1 pt-4">
+					<span className="text-tiny font-medium uppercase tracking-wider text-ink-faint">
+						Identity
+					</span>
+				</div>
+				<div className="flex flex-col gap-0.5 px-2">
 					{SECTIONS.filter((s) => s.group === "identity").map((section) => {
 						const isActive = activeSection === section.id;
-						const hasContent = !!getIdentityField(identityQuery.data ?? { soul: null, identity: null, role: null }, section.id)?.trim();
+						const hasContent = !!getIdentityField(
+							identityQuery.data ?? {soul: null, identity: null, role: null},
+							section.id,
+						)?.trim();
 						return (
 							<SettingSidebarButton
 								key={section.id}
@@ -234,7 +389,9 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 							>
 								<span className="flex-1">{section.label}</span>
 								{!hasContent && (
-									<span className="rounded bg-amber-500/10 px-1 py-0.5 text-tiny text-amber-400/70">empty</span>
+									<span className="rounded bg-amber-500/10 px-1 py-0.5 text-tiny text-amber-400/70">
+										empty
+									</span>
 								)}
 							</SettingSidebarButton>
 						);
@@ -243,9 +400,11 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 
 				{/* Config Group */}
 				<div className="px-3 pb-1 pt-4 mt-2">
-					<span className="text-tiny font-medium uppercase tracking-wider text-ink-faint">Configuration</span>
+					<span className="text-tiny font-medium uppercase tracking-wider text-ink-faint">
+						Configuration
+					</span>
 				</div>
-					<div className="flex flex-col gap-0.5 px-2">
+				<div className="flex flex-col gap-0.5 px-2">
 					{SECTIONS.filter((s) => s.group === "config").map((section) => {
 						const isActive = activeSection === section.id;
 						return (
@@ -263,35 +422,38 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 
 			{/* Editor */}
 			<div className="flex flex-1 flex-col overflow-hidden">
-			{isGeneralSection ? (
-			<GeneralEditor
-				key={active.id}
-				agentId={agentId}
-				displayName={currentAgent?.display_name ?? ""}
-				role={currentAgent?.role ?? ""}
-				gradientStart={currentAgent?.gradient_start ?? ""}
-				gradientEnd={currentAgent?.gradient_end ?? ""}
-				detail={active.detail}
-				onDirtyChange={setDirty}
-				saveHandlerRef={saveHandlerRef}
-				onSave={(update) => agentMutation.mutate(update)}
-			/>
-			) : isIdentitySection ? (
-			<IdentityEditor
-				key={active.id}
-				label={active.label}
-				description={active.description}
-				content={getIdentityField(identityQuery.data ?? { soul: null, identity: null, role: null }, active.id)}
-				onDirtyChange={setDirty}
-				saveHandlerRef={saveHandlerRef}
-				onSave={(content) => {
-					// Only mutate for identity sections
-					if (isIdentityField(active.id)) {
-						identityMutation.mutate({ field: active.id, content });
-					}
-				}}
-			/>
-			) : (
+				{isGeneralSection ? (
+					<GeneralEditor
+						key={active.id}
+						agentId={agentId}
+						displayName={currentAgent?.display_name ?? ""}
+						role={currentAgent?.role ?? ""}
+						gradientStart={currentAgent?.gradient_start ?? ""}
+						gradientEnd={currentAgent?.gradient_end ?? ""}
+						detail={active.detail}
+						onDirtyChange={setDirty}
+						saveHandlerRef={saveHandlerRef}
+						onSave={(update) => agentMutation.mutate(update)}
+					/>
+				) : isIdentitySection ? (
+					<IdentityEditor
+						key={active.id}
+						label={active.label}
+						description={active.description}
+						content={getIdentityField(
+							identityQuery.data ?? {soul: null, identity: null, role: null},
+							active.id,
+						)}
+						onDirtyChange={setDirty}
+						saveHandlerRef={saveHandlerRef}
+						onSave={(content) => {
+							// Only mutate for identity sections
+							if (isIdentityField(active.id)) {
+								identityMutation.mutate({field: active.id, content});
+							}
+						}}
+					/>
+				) : (
 					<ConfigSectionEditor
 						sectionId={active.id}
 						label={active.label}
@@ -300,7 +462,9 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 						config={configQuery.data!}
 						onDirtyChange={setDirty}
 						saveHandlerRef={saveHandlerRef}
-						onSave={(update) => configMutation.mutate({ agent_id: agentId, ...update })}
+						onSave={(update) =>
+							configMutation.mutate({agent_id: agentId, ...update})
+						}
 					/>
 				)}
 			</div>
@@ -309,26 +473,20 @@ export function AgentConfig({ agentId }: AgentConfigProps) {
 			<AnimatePresence>
 				{dirty && (
 					<motion.div
-						initial={{ y: 100 }}
-						animate={{ y: 0 }}
-						exit={{ y: 100 }}
-						transition={{ type: "spring", damping: 25, stiffness: 300 }}
-						className="absolute bottom-4 right-4 flex items-center gap-4 rounded-lg border border-app-line/50 bg-app-darkBox px-4 py-3 shadow-lg"
+						initial={{y: 100}}
+						animate={{y: 0}}
+						exit={{y: 100}}
+						transition={{type: "spring", damping: 25, stiffness: 300}}
+						className="absolute bottom-4 right-4 flex items-center gap-4 rounded-lg border border-app-line/50 bg-app-dark-box px-4 py-3 shadow-lg"
 					>
-						<span className="text-sm text-ink-dull">You have unsaved changes</span>
+						<span className="text-sm text-ink-dull">
+							You have unsaved changes
+						</span>
 						<div className="flex items-center gap-2">
-							<Button
-								onClick={handleRevert}
-								variant="ghost"
-								size="sm"
-							>
+							<Button onClick={handleRevert} variant="ghost" size="sm">
 								Revert
 							</Button>
-							<Button
-								onClick={handleSave}
-								size="sm"
-								loading={saving}
-							>
+							<Button onClick={handleSave} size="sm" loading={saving}>
 								Save Changes
 							</Button>
 						</div>
@@ -349,24 +507,42 @@ interface GeneralEditorProps {
 	gradientEnd: string;
 	detail: string;
 	onDirtyChange: (dirty: boolean) => void;
-	saveHandlerRef: React.MutableRefObject<{ save?: () => void; revert?: () => void }>;
-	onSave: (update: { display_name?: string; role?: string; gradient_start?: string; gradient_end?: string }) => void;
+	saveHandlerRef: React.MutableRefObject<{
+		save?: () => void;
+		revert?: () => void;
+	}>;
+	onSave: (update: {
+		display_name?: string;
+		role?: string;
+		gradient_start?: string;
+		gradient_end?: string;
+	}) => void;
 }
 
-const GRADIENT_PRESETS: { label: string; start: string; end: string }[] = [
-	{ label: "Purple", start: "hsl(270, 70%, 55%)", end: "hsl(310, 60%, 45%)" },
-	{ label: "Blue", start: "hsl(220, 70%, 55%)", end: "hsl(260, 60%, 45%)" },
-	{ label: "Teal", start: "hsl(170, 70%, 45%)", end: "hsl(200, 60%, 40%)" },
-	{ label: "Green", start: "hsl(140, 60%, 45%)", end: "hsl(170, 50%, 40%)" },
-	{ label: "Orange", start: "hsl(25, 80%, 55%)", end: "hsl(45, 70%, 45%)" },
-	{ label: "Red", start: "hsl(0, 70%, 55%)", end: "hsl(20, 60%, 45%)" },
-	{ label: "Pink", start: "hsl(330, 70%, 55%)", end: "hsl(350, 60%, 45%)" },
-	{ label: "Gold", start: "hsl(45, 80%, 55%)", end: "hsl(30, 70%, 40%)" },
-	{ label: "Indigo", start: "hsl(240, 60%, 55%)", end: "hsl(280, 50%, 45%)" },
-	{ label: "Slate", start: "hsl(220, 15%, 50%)", end: "hsl(220, 10%, 35%)" },
+const GRADIENT_PRESETS: {label: string; start: string; end: string}[] = [
+	{label: "Purple", start: "hsl(270, 70%, 55%)", end: "hsl(310, 60%, 45%)"},
+	{label: "Blue", start: "hsl(220, 70%, 55%)", end: "hsl(260, 60%, 45%)"},
+	{label: "Teal", start: "hsl(170, 70%, 45%)", end: "hsl(200, 60%, 40%)"},
+	{label: "Green", start: "hsl(140, 60%, 45%)", end: "hsl(170, 50%, 40%)"},
+	{label: "Orange", start: "hsl(25, 80%, 55%)", end: "hsl(45, 70%, 45%)"},
+	{label: "Red", start: "hsl(0, 70%, 55%)", end: "hsl(20, 60%, 45%)"},
+	{label: "Pink", start: "hsl(330, 70%, 55%)", end: "hsl(350, 60%, 45%)"},
+	{label: "Gold", start: "hsl(45, 80%, 55%)", end: "hsl(30, 70%, 40%)"},
+	{label: "Indigo", start: "hsl(240, 60%, 55%)", end: "hsl(280, 50%, 45%)"},
+	{label: "Slate", start: "hsl(220, 15%, 50%)", end: "hsl(220, 10%, 35%)"},
 ];
 
-function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd, detail, onDirtyChange, saveHandlerRef, onSave }: GeneralEditorProps) {
+function GeneralEditor({
+	agentId,
+	displayName,
+	role,
+	gradientStart,
+	gradientEnd,
+	detail,
+	onDirtyChange,
+	saveHandlerRef,
+	onSave,
+}: GeneralEditorProps) {
 	const queryClient = useQueryClient();
 	const [localDisplayName, setLocalDisplayName] = useState(displayName);
 	const [localRole, setLocalRole] = useState(role);
@@ -378,11 +554,11 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 
 	// Check if agent has an uploaded avatar
 	const avatarUrl = api.agentAvatarUrl(agentId);
-	const { data: avatarExists } = useQuery({
+	const {data: avatarExists} = useQuery({
 		queryKey: ["agentAvatar", agentId],
 		queryFn: async () => {
 			try {
-				const response = await fetch(avatarUrl, { method: "HEAD" });
+				const response = await fetch(avatarUrl, {method: "HEAD"});
 				return response.ok;
 			} catch {
 				return false;
@@ -393,9 +569,9 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 	const uploadAvatarMutation = useMutation({
 		mutationFn: (file: File) => api.uploadAvatar(agentId, file),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["agentAvatar", agentId] });
-			queryClient.invalidateQueries({ queryKey: ["agents"] });
-			queryClient.invalidateQueries({ queryKey: ["topology"] });
+			queryClient.invalidateQueries({queryKey: ["agentAvatar", agentId]});
+			queryClient.invalidateQueries({queryKey: ["agents"]});
+			queryClient.invalidateQueries({queryKey: ["topology"]});
 			setAvatarPreview(null);
 		},
 	});
@@ -403,9 +579,9 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 	const deleteAvatarMutation = useMutation({
 		mutationFn: () => api.deleteAvatar(agentId),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["agentAvatar", agentId] });
-			queryClient.invalidateQueries({ queryKey: ["agents"] });
-			queryClient.invalidateQueries({ queryKey: ["topology"] });
+			queryClient.invalidateQueries({queryKey: ["agentAvatar", agentId]});
+			queryClient.invalidateQueries({queryKey: ["agents"]});
+			queryClient.invalidateQueries({queryKey: ["topology"]});
 			setAvatarPreview(null);
 		},
 	});
@@ -431,7 +607,13 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 			gradient_end: localGradientEnd || undefined,
 		});
 		setLocalDirty(false);
-	}, [onSave, localDisplayName, localRole, localGradientStart, localGradientEnd]);
+	}, [
+		onSave,
+		localDisplayName,
+		localRole,
+		localGradientStart,
+		localGradientEnd,
+	]);
 
 	const handleRevert = useCallback(() => {
 		setLocalDisplayName(displayName);
@@ -467,7 +649,7 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 
 	return (
 		<>
-			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-darkBox/20 px-5 py-2.5">
+			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-dark-box/20 px-5 py-2.5">
 				<div className="flex items-center gap-3">
 					<h3 className="text-sm font-medium text-ink">General</h3>
 					<span className="text-tiny text-ink-faint">Agent metadata</span>
@@ -475,38 +657,53 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 				{localDirty ? (
 					<span className="text-tiny text-amber-400">Unsaved changes</span>
 				) : (
-					<span className="text-tiny text-ink-faint/50">Changes saved to config.toml</span>
+					<span className="text-tiny text-ink-faint/50">
+						Changes saved to config.toml
+					</span>
 				)}
 			</div>
 			<div className="flex-1 overflow-y-auto px-8 py-8">
-				<div className="mb-6 rounded-lg border border-app-line/30 bg-app-darkBox/20 px-5 py-4">
+				<div className="mb-6 rounded-lg border border-app-line/30 bg-app-dark-box/20 px-5 py-4">
 					<p className="text-sm leading-relaxed text-ink-dull">{detail}</p>
 				</div>
 				<div className="grid gap-4">
 					<div className="flex flex-col gap-1.5">
 						<label className="text-sm font-medium text-ink">Agent ID</label>
-						<p className="text-tiny text-ink-faint">The config key identifier. This cannot be changed.</p>
+						<p className="text-tiny text-ink-faint">
+							The config key identifier. This cannot be changed.
+						</p>
 						<Input
 							value={agentId}
 							disabled
-							className="border-app-line/50 bg-app-darkBox/30 text-ink-faint"
+							className="border-app-line/50 bg-app-dark-box/30 text-ink-faint"
 						/>
 					</div>
 					<div className="flex flex-col gap-1.5">
 						<label className="text-sm font-medium text-ink">Display Name</label>
-						<p className="text-tiny text-ink-faint">Human-friendly name shown in the UI and messaging platforms.</p>
+						<p className="text-tiny text-ink-faint">
+							Human-friendly name shown in the UI and messaging platforms.
+						</p>
 						<Input
 							value={localDisplayName}
-							onChange={(e) => { setLocalDisplayName(e.target.value); setLocalDirty(true); }}
+							onChange={(e) => {
+								setLocalDisplayName(e.target.value);
+								setLocalDirty(true);
+							}}
 							placeholder={agentId}
 						/>
 					</div>
 					<div className="flex flex-col gap-1.5">
 						<label className="text-sm font-medium text-ink">Role</label>
-						<p className="text-tiny text-ink-faint">Describes the agent's purpose. Shown in the topology view and agent listings.</p>
+						<p className="text-tiny text-ink-faint">
+							Describes the agent's purpose. Shown in the topology view and
+							agent listings.
+						</p>
 						<Input
 							value={localRole}
-							onChange={(e) => { setLocalRole(e.target.value); setLocalDirty(true); }}
+							onChange={(e) => {
+								setLocalRole(e.target.value);
+								setLocalDirty(true);
+							}}
 							placeholder="e.g. Research Assistant, Code Reviewer"
 						/>
 					</div>
@@ -514,7 +711,9 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 					{/* Avatar */}
 					<div className="flex flex-col gap-1.5">
 						<label className="text-sm font-medium text-ink">Avatar</label>
-						<p className="text-tiny text-ink-faint">Upload a custom image, or use the generated gradient avatar.</p>
+						<p className="text-tiny text-ink-faint">
+							Upload a custom image, or use the generated gradient avatar.
+						</p>
 						<div className="flex items-center gap-4">
 							<ProfileAvatar
 								seed={agentId}
@@ -523,7 +722,10 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 								className="rounded-full shrink-0"
 								gradientStart={localGradientStart || undefined}
 								gradientEnd={localGradientEnd || undefined}
-								avatarUrl={avatarPreview ?? (avatarExists ? `${avatarUrl}&t=${Date.now()}` : undefined)}
+								avatarUrl={
+									avatarPreview ??
+									(avatarExists ? `${avatarUrl}&t=${Date.now()}` : undefined)
+								}
 							/>
 							<div className="flex flex-col gap-2">
 								<div className="flex items-center gap-2">
@@ -545,7 +747,9 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 										</Button>
 									)}
 								</div>
-								<p className="text-tiny text-ink-faint/60">PNG, JPEG, WebP, GIF, or SVG. Max 5 MB.</p>
+								<p className="text-tiny text-ink-faint/60">
+									PNG, JPEG, WebP, GIF, or SVG. Max 5 MB.
+								</p>
 							</div>
 							<input
 								ref={fileInputRef}
@@ -560,38 +764,54 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 					{/* Gradient Color */}
 					<div className="flex flex-col gap-1.5">
 						<label className="text-sm font-medium text-ink">Gradient</label>
-						<p className="text-tiny text-ink-faint">Choose a gradient for the avatar and banner. Only used when no image is uploaded.</p>
+						<p className="text-tiny text-ink-faint">
+							Choose a gradient for the avatar and banner. Only used when no
+							image is uploaded.
+						</p>
 						<div className="flex flex-wrap gap-2">
 							{/* Auto (seed-based) option */}
 							<button
-								onClick={() => { setLocalGradientStart(""); setLocalGradientEnd(""); setLocalDirty(true); }}
+								onClick={() => {
+									setLocalGradientStart("");
+									setLocalGradientEnd("");
+									setLocalDirty(true);
+								}}
 								className={cx(
 									"flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors",
 									!localGradientStart
 										? "border-accent bg-accent/10 text-ink"
-										: "border-app-line/50 text-ink-faint hover:border-app-line"
+										: "border-app-line/50 text-ink-faint hover:border-app-line",
 								)}
 							>
 								<span
 									className="h-5 w-5 rounded-full shrink-0"
-									style={{ background: `linear-gradient(135deg, ${seedC1}, ${seedC2})` }}
+									style={{
+										background: `linear-gradient(135deg, ${seedC1}, ${seedC2})`,
+									}}
 								/>
 								Auto
 							</button>
 							{GRADIENT_PRESETS.map((preset) => (
 								<button
 									key={preset.label}
-									onClick={() => { setLocalGradientStart(preset.start); setLocalGradientEnd(preset.end); setLocalDirty(true); }}
+									onClick={() => {
+										setLocalGradientStart(preset.start);
+										setLocalGradientEnd(preset.end);
+										setLocalDirty(true);
+									}}
 									className={cx(
 										"flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors",
-										localGradientStart === preset.start && localGradientEnd === preset.end
+										localGradientStart === preset.start &&
+											localGradientEnd === preset.end
 											? "border-accent bg-accent/10 text-ink"
-											: "border-app-line/50 text-ink-faint hover:border-app-line"
+											: "border-app-line/50 text-ink-faint hover:border-app-line",
 									)}
 								>
 									<span
 										className="h-5 w-5 rounded-full shrink-0"
-										style={{ background: `linear-gradient(135deg, ${preset.start}, ${preset.end})` }}
+										style={{
+											background: `linear-gradient(135deg, ${preset.start}, ${preset.end})`,
+										}}
 									/>
 									{preset.label}
 								</button>
@@ -602,7 +822,9 @@ function GeneralEditor({ agentId, displayName, role, gradientStart, gradientEnd,
 							<span className="text-tiny text-ink-faint">Preview:</span>
 							<span
 								className="h-6 w-20 rounded"
-								style={{ background: `linear-gradient(135deg, ${previewC1}, ${previewC2})` }}
+								style={{
+									background: `linear-gradient(135deg, ${previewC1}, ${previewC2})`,
+								}}
 							/>
 						</div>
 					</div>
@@ -619,11 +841,21 @@ interface IdentityEditorProps {
 	description: string;
 	content: string | null;
 	onDirtyChange: (dirty: boolean) => void;
-	saveHandlerRef: React.MutableRefObject<{ save?: () => void; revert?: () => void }>;
+	saveHandlerRef: React.MutableRefObject<{
+		save?: () => void;
+		revert?: () => void;
+	}>;
 	onSave: (value: string) => void;
 }
 
-function IdentityEditor({ label, description, content, onDirtyChange, saveHandlerRef, onSave }: IdentityEditorProps) {
+function IdentityEditor({
+	label,
+	description,
+	content,
+	onDirtyChange,
+	saveHandlerRef,
+	onSave,
+}: IdentityEditorProps) {
 	const [value, setValue] = useState(content ?? "");
 	const [localDirty, setLocalDirty] = useState(false);
 	const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -638,10 +870,13 @@ function IdentityEditor({ label, description, content, onDirtyChange, saveHandle
 		onDirtyChange(localDirty);
 	}, [localDirty, onDirtyChange]);
 
-	const handleChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setValue(event.target.value);
-		setLocalDirty(true);
-	}, []);
+	const handleChange = useCallback(
+		(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+			setValue(event.target.value);
+			setLocalDirty(true);
+		},
+		[],
+	);
 
 	const handleSave = useCallback(() => {
 		onSave(value);
@@ -675,22 +910,34 @@ function IdentityEditor({ label, description, content, onDirtyChange, saveHandle
 
 	return (
 		<>
-			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-darkBox/20 px-5 py-2.5">
+			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-dark-box/20 px-5 py-2.5">
 				<div className="flex items-center gap-3">
 					<h3 className="text-sm font-medium text-ink">{label}</h3>
-					<span className="rounded bg-app-darkBox px-1.5 py-0.5 font-mono text-tiny text-ink-faint">{description}</span>
+					<span className="rounded bg-app-dark-box px-1.5 py-0.5 font-mono text-tiny text-ink-faint">
+						{description}
+					</span>
 				</div>
 				<div className="flex items-center gap-3">
 					<div className="flex items-center rounded border border-app-line/50 text-tiny">
 						<button
 							onClick={() => setMode("edit")}
-							className={cx("px-2 py-0.5 rounded-l transition-colors", mode === "edit" ? "bg-app-darkBox text-ink" : "text-ink-faint hover:text-ink")}
+							className={cx(
+								"px-2 py-0.5 rounded-l transition-colors",
+								mode === "edit"
+									? "bg-app-dark-box text-ink"
+									: "text-ink-faint hover:text-ink",
+							)}
 						>
 							Edit
 						</button>
 						<button
 							onClick={() => setMode("preview")}
-							className={cx("px-2 py-0.5 rounded-r transition-colors", mode === "preview" ? "bg-app-darkBox text-ink" : "text-ink-faint hover:text-ink")}
+							className={cx(
+								"px-2 py-0.5 rounded-r transition-colors",
+								mode === "preview"
+									? "bg-app-dark-box text-ink"
+									: "text-ink-faint hover:text-ink",
+							)}
 						>
 							Preview
 						</button>
@@ -709,7 +956,7 @@ function IdentityEditor({ label, description, content, onDirtyChange, saveHandle
 						onChange={handleChange}
 						onKeyDown={handleKeyDown}
 						placeholder={`Write ${label.toLowerCase()} content here...`}
-						className="h-full w-full resize-none border-transparent bg-app-darkBox/30 px-4 py-3 font-mono leading-relaxed placeholder:text-ink-faint/40"
+						className="h-full w-full resize-none border-transparent bg-app-dark-box/30 px-4 py-3 font-mono leading-relaxed placeholder:text-ink-faint/40"
 						spellCheck={false}
 					/>
 				) : (
@@ -717,7 +964,9 @@ function IdentityEditor({ label, description, content, onDirtyChange, saveHandle
 						{value ? (
 							<Markdown>{value}</Markdown>
 						) : (
-							<span className="text-ink-faint/40 text-sm">Nothing to preview.</span>
+							<span className="text-ink-faint/40 text-sm">
+								Nothing to preview.
+							</span>
 						)}
 					</div>
 				)}
@@ -735,36 +984,54 @@ interface ConfigSectionEditorProps {
 	detail: string;
 	config: AgentConfigResponse;
 	onDirtyChange: (dirty: boolean) => void;
-	saveHandlerRef: React.MutableRefObject<{ save?: () => void; revert?: () => void }>;
+	saveHandlerRef: React.MutableRefObject<{
+		save?: () => void;
+		revert?: () => void;
+	}>;
 	onSave: (update: Partial<AgentConfigUpdateRequest>) => void;
 }
 
-const SANDBOX_DEFAULTS = { mode: "enabled" as const, writable_paths: [] as string[] };
+const SANDBOX_DEFAULTS = {
+	mode: "enabled" as const,
+	writable_paths: [] as string[],
+};
 
-function ConfigSectionEditor({ sectionId, label, description, detail, config, onDirtyChange, saveHandlerRef, onSave }: ConfigSectionEditorProps) {
+function ConfigSectionEditor({
+	sectionId,
+	label,
+	description,
+	detail,
+	config,
+	onDirtyChange,
+	saveHandlerRef,
+	onSave,
+}: ConfigSectionEditorProps) {
 	type ConfigValues = Record<string, string | number | boolean | string[]>;
 	const sandbox = config.sandbox ?? SANDBOX_DEFAULTS;
 	const [localValues, setLocalValues] = useState<ConfigValues>(() => {
 		// Initialize from config based on section
 		switch (sectionId) {
 			case "routing":
-				return { ...config.routing } as ConfigValues;
+				return {...config.routing} as ConfigValues;
 			case "tuning":
-				return { ...config.tuning } as ConfigValues;
+				return {...config.tuning} as ConfigValues;
 			case "compaction":
-				return { ...config.compaction } as ConfigValues;
+				return {...config.compaction} as ConfigValues;
 			case "cortex":
-				return { ...config.cortex } as ConfigValues;
+				return {...config.cortex} as ConfigValues;
 			case "coalesce":
-				return { ...config.coalesce } as ConfigValues;
+				return {...config.coalesce} as ConfigValues;
 			case "memory":
-				return { ...config.memory_persistence } as ConfigValues;
+				return {...config.memory_persistence} as ConfigValues;
 			case "browser":
-				return { ...config.browser } as ConfigValues;
-case "sandbox":
-				return { mode: sandbox.mode, writable_paths: sandbox.writable_paths } as ConfigValues;
+				return {...config.browser} as ConfigValues;
+			case "sandbox":
+				return {
+					mode: sandbox.mode,
+					writable_paths: sandbox.writable_paths,
+				} as ConfigValues;
 			case "projects":
-				return { ...config.projects } as ConfigValues;
+				return {...config.projects} as ConfigValues;
 			default:
 				return {};
 		}
@@ -781,74 +1048,83 @@ case "sandbox":
 		if (!localDirty) {
 			switch (sectionId) {
 				case "routing":
-					setLocalValues({ ...config.routing });
+					setLocalValues({...config.routing});
 					break;
 				case "tuning":
-					setLocalValues({ ...config.tuning });
+					setLocalValues({...config.tuning});
 					break;
 				case "compaction":
-					setLocalValues({ ...config.compaction });
+					setLocalValues({...config.compaction});
 					break;
 				case "cortex":
-					setLocalValues({ ...config.cortex });
+					setLocalValues({...config.cortex});
 					break;
 				case "coalesce":
-					setLocalValues({ ...config.coalesce });
+					setLocalValues({...config.coalesce});
 					break;
 				case "memory":
-					setLocalValues({ ...config.memory_persistence });
+					setLocalValues({...config.memory_persistence});
 					break;
 				case "browser":
-					setLocalValues({ ...config.browser });
+					setLocalValues({...config.browser});
 					break;
 				case "sandbox":
-					setLocalValues({ mode: sandbox.mode, writable_paths: sandbox.writable_paths });
+					setLocalValues({
+						mode: sandbox.mode,
+						writable_paths: sandbox.writable_paths,
+					});
 					break;
 				case "projects":
-					setLocalValues({ ...config.projects });
+					setLocalValues({...config.projects});
 					break;
 			}
 		}
 	}, [config, sectionId, localDirty]);
 
-	const handleChange = useCallback((field: string, value: string | number | boolean | string[]) => {
-		setLocalValues((prev) => ({ ...prev, [field]: value }));
-		setLocalDirty(true);
-	}, []);
+	const handleChange = useCallback(
+		(field: string, value: string | number | boolean | string[]) => {
+			setLocalValues((prev) => ({...prev, [field]: value}));
+			setLocalDirty(true);
+		},
+		[],
+	);
 
 	const handleSave = useCallback(() => {
-		onSave({ [sectionId]: localValues });
+		onSave({[sectionId]: localValues});
 		setLocalDirty(false);
 	}, [onSave, sectionId, localValues]);
 
 	const handleRevert = useCallback(() => {
 		switch (sectionId) {
 			case "routing":
-				setLocalValues({ ...config.routing });
+				setLocalValues({...config.routing});
 				break;
 			case "tuning":
-				setLocalValues({ ...config.tuning });
+				setLocalValues({...config.tuning});
 				break;
 			case "compaction":
-				setLocalValues({ ...config.compaction });
+				setLocalValues({...config.compaction});
 				break;
 			case "cortex":
-				setLocalValues({ ...config.cortex });
+				setLocalValues({...config.cortex});
 				break;
 			case "coalesce":
-				setLocalValues({ ...config.coalesce });
+				setLocalValues({...config.coalesce});
 				break;
 			case "memory":
-				setLocalValues({ ...config.memory_persistence });
+				setLocalValues({...config.memory_persistence});
 				break;
 			case "browser":
-				setLocalValues({ ...config.browser });
+				setLocalValues({...config.browser});
 				break;
 			case "sandbox":
-				setLocalValues({ mode: sandbox.mode, writable_paths: sandbox.writable_paths });
+				setLocalValues({
+					mode: sandbox.mode,
+					writable_paths: sandbox.writable_paths,
+				});
 				break;
 			case "projects":
-				setLocalValues({ ...config.projects });
+				setLocalValues({...config.projects});
 				break;
 		}
 		setLocalDirty(false);
@@ -868,32 +1144,65 @@ case "sandbox":
 		switch (sectionId) {
 			case "routing": {
 				const modelSlots = [
-					{ key: "channel", label: "Channel Model", description: "Model for user-facing channels" },
-					{ key: "branch", label: "Branch Model", description: "Model for thinking branches" },
-					{ key: "worker", label: "Worker Model", description: "Model for task workers" },
-					{ key: "compactor", label: "Compactor Model", description: "Model for summarization" },
-					{ key: "cortex", label: "Cortex Model", description: "Model for system observation" },
-					{ key: "voice", label: "Voice Model", description: "Model for transcribing audio attachments" },
+					{
+						key: "channel",
+						label: "Channel Model",
+						description: "Model for user-facing channels",
+					},
+					{
+						key: "branch",
+						label: "Branch Model",
+						description: "Model for thinking branches",
+					},
+					{
+						key: "worker",
+						label: "Worker Model",
+						description: "Model for task workers",
+					},
+					{
+						key: "compactor",
+						label: "Compactor Model",
+						description: "Model for summarization",
+					},
+					{
+						key: "cortex",
+						label: "Cortex Model",
+						description: "Model for system observation",
+					},
+					{
+						key: "voice",
+						label: "Voice Model",
+						description: "Model for transcribing audio attachments",
+					},
 				];
 				return (
 					<div className="grid gap-4">
-						{modelSlots.map(({ key, label, description }) => (
+						{modelSlots.map(({key, label, description}) => (
 							<div key={key} className="flex flex-col gap-2">
 								<ModelSelect
 									label={label}
 									description={description}
 									value={localValues[key] as string}
 									onChange={(v) => handleChange(key, v)}
-									capability={key === "voice" ? "voice_transcription" : undefined}
+									capability={
+										key === "voice" ? "voice_transcription" : undefined
+									}
 								/>
 								{supportsAdaptiveThinking(localValues[key] as string) && (
 									<div className="ml-4 flex flex-col gap-1">
-										<label className="text-xs font-medium text-ink-dull">Thinking Effort</label>
+										<label className="text-xs font-medium text-ink-dull">
+											Thinking Effort
+										</label>
 										<SelectRoot
-											value={(localValues[`${key}_thinking_effort`] as string) || "auto"}
-											onValueChange={(value) => handleChange(`${key}_thinking_effort`, value)}
+											value={
+												(localValues[`${key}_thinking_effort`] as string) ||
+												"auto"
+											}
+											onValueChange={(value) =>
+												handleChange(`${key}_thinking_effort`, value)
+											}
 										>
-											<SelectTrigger className="border-app-line/50 bg-app-darkBox/30">
+											<SelectTrigger className="border-app-line/50 bg-app-dark-box/30">
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
@@ -1165,13 +1474,17 @@ case "sandbox":
 							onChange={(v) => handleChange("persist_session", v)}
 						/>
 						<div className="flex flex-col gap-1.5">
-							<label className="text-sm font-medium text-ink">Close Policy</label>
-							<p className="text-tiny text-ink-faint">What happens when a worker calls &quot;close&quot; or finishes.</p>
+							<label className="text-sm font-medium text-ink">
+								Close Policy
+							</label>
+							<p className="text-tiny text-ink-faint">
+								What happens when a worker calls &quot;close&quot; or finishes.
+							</p>
 							<SelectRoot
 								value={localValues.close_policy as string}
 								onValueChange={(v) => handleChange("close_policy", v)}
 							>
-								<SelectTrigger className="border-app-line/50 bg-app-darkBox/30">
+								<SelectTrigger className="border-app-line/50 bg-app-dark-box/30">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -1188,12 +1501,14 @@ case "sandbox":
 					<div className="grid gap-4">
 						<div className="flex flex-col gap-1.5">
 							<label className="text-sm font-medium text-ink">Mode</label>
-							<p className="text-tiny text-ink-faint">Kernel-enforced filesystem containment for shell subprocesses.</p>
+							<p className="text-tiny text-ink-faint">
+								Kernel-enforced filesystem containment for shell subprocesses.
+							</p>
 							<SelectRoot
 								value={localValues.mode as string}
 								onValueChange={(v) => handleChange("mode", v)}
 							>
-								<SelectTrigger className="border-app-line/50 bg-app-darkBox/30">
+								<SelectTrigger className="border-app-line/50 bg-app-dark-box/30">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -1203,8 +1518,14 @@ case "sandbox":
 							</SelectRoot>
 						</div>
 						<div className="flex flex-col gap-1.5">
-						<label className="text-sm font-medium text-ink">Extra Allowed Paths</label>
-						<p className="text-tiny text-ink-faint">Additional directories workers can read and write beyond the workspace. The workspace is always accessible. Press Enter to add a path.</p>
+							<label className="text-sm font-medium text-ink">
+								Extra Allowed Paths
+							</label>
+							<p className="text-tiny text-ink-faint">
+								Additional directories workers can read and write beyond the
+								workspace. The workspace is always accessible. Press Enter to
+								add a path.
+							</p>
 							<TagInput
 								value={(localValues.writable_paths as string[]) ?? []}
 								onChange={(paths) => handleChange("writable_paths", paths)}
@@ -1223,13 +1544,21 @@ case "sandbox":
 							onChange={(v) => handleChange("use_worktrees", v)}
 						/>
 						<div className="flex flex-col gap-1.5">
-							<label className="text-sm font-medium text-ink">Worktree Name Template</label>
-							<p className="text-tiny text-ink-faint">Template for naming new worktrees. Use <code className="text-ink-dull">{"{branch}"}</code> for the branch name.</p>
+							<label className="text-sm font-medium text-ink">
+								Worktree Name Template
+							</label>
+							<p className="text-tiny text-ink-faint">
+								Template for naming new worktrees. Use{" "}
+								<code className="text-ink-dull">{"{branch}"}</code> for the
+								branch name.
+							</p>
 							<Input
 								value={localValues.worktree_name_template as string}
-								onChange={(e) => handleChange("worktree_name_template", e.target.value)}
+								onChange={(e) =>
+									handleChange("worktree_name_template", e.target.value)
+								}
 								placeholder="{branch}"
-								className="border-app-line/50 bg-app-darkBox/30"
+								className="border-app-line/50 bg-app-dark-box/30"
 							/>
 						</div>
 						<ConfigToggleField
@@ -1267,7 +1596,7 @@ case "sandbox":
 
 	return (
 		<>
-			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-darkBox/20 px-5 py-2.5">
+			<div className="flex items-center justify-between border-b border-app-line/50 bg-app-dark-box/20 px-5 py-2.5">
 				<div className="flex items-center gap-3">
 					<h3 className="text-sm font-medium text-ink">{label}</h3>
 					<span className="text-tiny text-ink-faint">{description}</span>
@@ -1275,11 +1604,13 @@ case "sandbox":
 				{localDirty ? (
 					<span className="text-tiny text-amber-400">Unsaved changes</span>
 				) : (
-					<span className="text-tiny text-ink-faint/50">Changes saved to config.toml</span>
+					<span className="text-tiny text-ink-faint/50">
+						Changes saved to config.toml
+					</span>
 				)}
 			</div>
 			<div className="flex-1 overflow-y-auto px-8 py-8">
-				<div className="mb-6 rounded-lg border border-app-line/30 bg-app-darkBox/20 px-5 py-4">
+				<div className="mb-6 rounded-lg border border-app-line/30 bg-app-dark-box/20 px-5 py-4">
 					<p className="text-sm leading-relaxed text-ink-dull">{detail}</p>
 				</div>
 				{renderFields()}
@@ -1297,7 +1628,12 @@ interface ConfigToggleFieldProps {
 	onChange: (value: boolean) => void;
 }
 
-function ConfigToggleField({ label, description, value, onChange }: ConfigToggleFieldProps) {
+function ConfigToggleField({
+	label,
+	description,
+	value,
+	onChange,
+}: ConfigToggleFieldProps) {
 	return (
 		<div className="flex items-center justify-between py-2">
 			<div className="flex flex-col gap-0.5">

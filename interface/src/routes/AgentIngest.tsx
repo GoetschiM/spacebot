@@ -258,7 +258,7 @@ function FileRow({
 			: 0;
 
 	return (
-		<div className="group flex items-center gap-4 rounded-lg border border-app-line bg-app-darkBox/30 px-4 py-3">
+		<div className="group flex items-center gap-4 rounded-lg border border-app-line bg-app-dark-box/30 px-4 py-3">
 			{/* File icon */}
 			<div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-app-box text-xs text-ink-faint">
 				{file.filename.split(".").pop()?.toUpperCase() ?? "TXT"}

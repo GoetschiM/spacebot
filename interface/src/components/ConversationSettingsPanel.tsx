@@ -190,7 +190,11 @@ function SettingSelect<T extends string>({
 			<Popover.Trigger asChild>
 				<SelectPill size="sm">{selectedLabel}</SelectPill>
 			</Popover.Trigger>
-			<Popover.Content align="end" sideOffset={4} className="min-w-[160px] p-1.5">
+			<Popover.Content
+				align="end"
+				sideOffset={4}
+				className="min-w-[160px] p-1.5"
+			>
 				<OptionList>
 					{options.map((opt) => (
 						<OptionListItem
@@ -226,16 +230,21 @@ function ModelSelect({
 	const [open, setOpen] = useState(false);
 
 	const allModels = Object.values(modelGroups).flat();
-	const selectedLabel = value === "__inherit__"
-		? "Inherit"
-		: allModels.find((m) => m.id === value)?.name ?? value;
+	const selectedLabel =
+		value === "__inherit__"
+			? "Inherit"
+			: (allModels.find((m) => m.id === value)?.name ?? value);
 
 	return (
 		<Popover.Root open={open} onOpenChange={setOpen}>
 			<Popover.Trigger asChild>
 				<SelectPill size="sm">{selectedLabel}</SelectPill>
 			</Popover.Trigger>
-			<Popover.Content align="end" sideOffset={4} className="max-h-60 min-w-[200px] overflow-y-auto p-1.5">
+			<Popover.Content
+				align="end"
+				sideOffset={4}
+				className="max-h-60 min-w-[200px] overflow-y-auto p-1.5"
+			>
 				<OptionList>
 					{inheritOption && (
 						<OptionListItem
@@ -300,7 +309,7 @@ export function ConversationSettingsPanel({
 						key={preset.id}
 						onClick={() => onChange({...currentSettings, ...preset.settings})}
 						title={preset.description}
-						className="rounded-md border border-app-line bg-app-darkBox px-2.5 py-1 text-xs text-ink-dull transition-colors hover:border-accent/40 hover:text-ink"
+						className="rounded-md border border-app-line bg-app-dark-box px-2.5 py-1 text-xs text-ink-dull transition-colors hover:border-accent/40 hover:text-ink"
 					>
 						{preset.name}
 					</button>
@@ -392,7 +401,9 @@ export function ConversationSettingsPanel({
 							label={process.charAt(0).toUpperCase() + process.slice(1)}
 						>
 							<ModelSelect
-								value={currentSettings.model_overrides?.[process] || "__inherit__"}
+								value={
+									currentSettings.model_overrides?.[process] || "__inherit__"
+								}
 								modelGroups={modelGroups}
 								inheritOption
 								onChange={(value) => {

@@ -1,12 +1,18 @@
-import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {useState, useCallback} from "react";
+import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
 	api,
 	type PromptInspectResponse,
 	type PromptSnapshotSummary,
 } from "@/api/client";
-import { Button, DialogRoot, DialogContent, DialogHeader, DialogTitle } from "@spacedrive/primitives";
-import { Switch } from "@spacedrive/primitives";
+import {
+	Button,
+	DialogRoot,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@spacedrive/primitives";
+import {Switch} from "@spacedrive/primitives";
 
 interface PromptInspectModalProps {
 	open: boolean;
@@ -16,26 +22,30 @@ interface PromptInspectModalProps {
 
 type View = "current" | "history";
 
-export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInspectModalProps) {
+export function PromptInspectModal({
+	open,
+	onOpenChange,
+	channelId,
+}: PromptInspectModalProps) {
 	const [view, setView] = useState<View>("current");
 	const [selectedSnapshot, setSelectedSnapshot] = useState<number | null>(null);
 	const queryClient = useQueryClient();
 
-	const { data, isLoading, error } = useQuery<PromptInspectResponse>({
+	const {data, isLoading, error} = useQuery<PromptInspectResponse>({
 		queryKey: ["inspectPrompt", channelId],
 		queryFn: () => api.inspectPrompt(channelId),
 		enabled: open,
 		staleTime: 0,
 	});
 
-	const { data: snapshotList } = useQuery({
+	const {data: snapshotList} = useQuery({
 		queryKey: ["promptSnapshots", channelId],
 		queryFn: () => api.listPromptSnapshots(channelId),
 		enabled: open && view === "history",
 		staleTime: 0,
 	});
 
-	const { data: snapshotDetail, isLoading: snapshotLoading } = useQuery({
+	const {data: snapshotDetail, isLoading: snapshotLoading} = useQuery({
 		queryKey: ["promptSnapshot", channelId, selectedSnapshot],
 		queryFn: () => api.getPromptSnapshot(channelId, selectedSnapshot!),
 		enabled: open && selectedSnapshot !== null,
@@ -45,8 +55,8 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 	const captureMutation = useMutation({
 		mutationFn: (enabled: boolean) => api.setPromptCapture(channelId, enabled),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["inspectPrompt", channelId] });
-			queryClient.invalidateQueries({ queryKey: ["promptSnapshots", channelId] });
+			queryClient.invalidateQueries({queryKey: ["inspectPrompt", channelId]});
+			queryClient.invalidateQueries({queryKey: ["promptSnapshots", channelId]});
 		},
 	});
 
@@ -57,10 +67,17 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 	}, [captureMutation, captureEnabled]);
 
 	// Determine what to display
-	const systemPrompt = view === "current" ? data?.system_prompt : snapshotDetail?.system_prompt;
+	const systemPrompt =
+		view === "current" ? data?.system_prompt : snapshotDetail?.system_prompt;
 	const history = view === "current" ? data?.history : snapshotDetail?.history;
-	const totalChars = view === "current" ? (data?.total_chars ?? 0) : (snapshotDetail?.system_prompt_chars ?? 0);
-	const historyLength = view === "current" ? (data?.history_length ?? 0) : (snapshotDetail?.history_length ?? 0);
+	const totalChars =
+		view === "current"
+			? (data?.total_chars ?? 0)
+			: (snapshotDetail?.system_prompt_chars ?? 0);
+	const historyLength =
+		view === "current"
+			? (data?.history_length ?? 0)
+			: (snapshotDetail?.history_length ?? 0);
 	const showContent = view === "current" || selectedSnapshot !== null;
 	const contentLoading = view === "current" ? isLoading : snapshotLoading;
 
@@ -74,7 +91,9 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 							<span>{totalChars.toLocaleString()} chars</span>
 							<span>{historyLength} history messages</span>
 							{view === "history" && snapshotDetail && (
-								<span>{new Date(snapshotDetail.timestamp_ms).toLocaleString()}</span>
+								<span>
+									{new Date(snapshotDetail.timestamp_ms).toLocaleString()}
+								</span>
 							)}
 						</div>
 					)}
@@ -82,17 +101,23 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 
 				<div className="flex min-h-0 flex-1">
 					{/* Sidebar */}
-					<div className="flex w-48 flex-shrink-0 flex-col border-r border-app-line/50 bg-app-darkBox/30">
+					<div className="flex w-48 flex-shrink-0 flex-col border-r border-app-line/50 bg-app-dark-box/30">
 						<div className="flex flex-col gap-0.5 p-2">
 							<SidebarButton
 								active={view === "current"}
-								onClick={() => { setView("current"); setSelectedSnapshot(null); }}
+								onClick={() => {
+									setView("current");
+									setSelectedSnapshot(null);
+								}}
 							>
 								Current
 							</SidebarButton>
 							<SidebarButton
 								active={view === "history"}
-								onClick={() => { setView("history"); setSelectedSnapshot(null); }}
+								onClick={() => {
+									setView("history");
+									setSelectedSnapshot(null);
+								}}
 							>
 								History
 							</SidebarButton>
@@ -143,7 +168,8 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 						)}
 						{error && (
 							<div className="m-6 rounded-md border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-								Failed to load prompt: {error instanceof Error ? error.message : "Unknown error"}
+								Failed to load prompt:{" "}
+								{error instanceof Error ? error.message : "Unknown error"}
 							</div>
 						)}
 						{data?.error && (
@@ -151,22 +177,28 @@ export function PromptInspectModal({ open, onOpenChange, channelId }: PromptInsp
 								{data.message}
 							</div>
 						)}
-						{view === "history" && selectedSnapshot === null && !snapshotLoading && (
-							<div className="flex items-center justify-center py-12">
-								<span className="text-sm text-ink-faint">
-									{captureEnabled
-										? "Select a snapshot from the sidebar"
-										: "Enable capture to start recording prompt snapshots"}
-								</span>
-							</div>
-						)}
+						{view === "history" &&
+							selectedSnapshot === null &&
+							!snapshotLoading && (
+								<div className="flex items-center justify-center py-12">
+									<span className="text-sm text-ink-faint">
+										{captureEnabled
+											? "Select a snapshot from the sidebar"
+											: "Enable capture to start recording prompt snapshots"}
+									</span>
+								</div>
+							)}
 						{showContent && !contentLoading && systemPrompt != null && (
 							<pre className="whitespace-pre-wrap break-words p-6 font-mono text-xs text-ink-dull leading-relaxed">
-								<span className="text-ink-faint">{"--- SYSTEM PROMPT ---\n\n"}</span>
+								<span className="text-ink-faint">
+									{"--- SYSTEM PROMPT ---\n\n"}
+								</span>
 								{systemPrompt}
 								{history != null && (
 									<>
-										<span className="text-ink-faint">{"\n\n--- MESSAGES ---\n"}</span>
+										<span className="text-ink-faint">
+											{"\n\n--- MESSAGES ---\n"}
+										</span>
 										{renderRawHistory(history)}
 									</>
 								)}
@@ -229,9 +261,10 @@ function extractTextParts(message: any): string[] {
 				const resultText = formatToolResultText(block.content);
 				parts.push(`[tool_result id=${block.id}] ${resultText}`);
 			} else if (block.function && typeof block.function === "object") {
-				const args = typeof block.function.arguments === "string"
-					? block.function.arguments
-					: JSON.stringify(block.function.arguments);
+				const args =
+					typeof block.function.arguments === "string"
+						? block.function.arguments
+						: JSON.stringify(block.function.arguments);
 				parts.push(`[tool_use ${block.function.name}] ${args}`);
 			} else if (Array.isArray(block.reasoning)) {
 				parts.push(`[thinking] ${block.reasoning.join("\n")}`);
@@ -241,9 +274,10 @@ function extractTextParts(message: any): string[] {
 		if (typeof content.text === "string") {
 			parts.push(content.text);
 		} else if (content.function) {
-			const args = typeof content.function.arguments === "string"
-				? content.function.arguments
-				: JSON.stringify(content.function.arguments);
+			const args =
+				typeof content.function.arguments === "string"
+					? content.function.arguments
+					: JSON.stringify(content.function.arguments);
 			parts.push(`[tool_use ${content.function.name}] ${args}`);
 		} else if (content.type === "toolresult") {
 			const resultText = formatToolResultText(content.content);
@@ -258,7 +292,9 @@ function formatToolResultText(content: any): string {
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
 		return content
-			.map((c: any) => (typeof c.text === "string" ? c.text : JSON.stringify(c)))
+			.map((c: any) =>
+				typeof c.text === "string" ? c.text : JSON.stringify(c),
+			)
 			.join(" ");
 	}
 	return JSON.stringify(content);
@@ -298,11 +334,16 @@ function SnapshotListItem({
 	onClick: () => void;
 }) {
 	const time = new Date(snapshot.timestamp_ms);
-	const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-	const dateStr = time.toLocaleDateString([], { month: "short", day: "numeric" });
-	const preview = snapshot.user_message.length > 60
-		? snapshot.user_message.slice(0, 60) + "..."
-		: snapshot.user_message;
+	const timeStr = time.toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
+	const dateStr = time.toLocaleDateString([], {month: "short", day: "numeric"});
+	const preview =
+		snapshot.user_message.length > 60
+			? snapshot.user_message.slice(0, 60) + "..."
+			: snapshot.user_message;
 
 	return (
 		<button
@@ -318,7 +359,9 @@ function SnapshotListItem({
 				<span>{dateStr}</span>
 				<span>{timeStr}</span>
 			</div>
-			<p className="mt-0.5 text-tiny text-ink-dull leading-snug truncate">{preview || "(empty)"}</p>
+			<p className="mt-0.5 text-tiny text-ink-dull leading-snug truncate">
+				{preview || "(empty)"}
+			</p>
 			<div className="mt-0.5 flex gap-2 text-tiny text-ink-faint/60">
 				<span>{snapshot.system_prompt_chars.toLocaleString()} ch</span>
 				<span>{snapshot.history_length} msgs</span>

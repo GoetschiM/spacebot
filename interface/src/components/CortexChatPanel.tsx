@@ -2,8 +2,19 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {useCortexChat, type ToolActivity} from "@/hooks/useCortexChat";
 import {Markdown} from "@/components/Markdown";
 import {ToolCall, type ToolCallPair} from "@/components/ToolCall";
-import {api, type CortexChatToolCall, type CortexChatThread} from "@/api/client";
-import {Button, CircleButton, CircleButtonGroup, PopoverRoot, PopoverContent, PopoverTrigger} from "@spacedrive/primitives";
+import {
+	api,
+	type CortexChatToolCall,
+	type CortexChatThread,
+} from "@/api/client";
+import {
+	Button,
+	CircleButton,
+	CircleButtonGroup,
+	PopoverRoot,
+	PopoverContent,
+	PopoverTrigger,
+} from "@spacedrive/primitives";
 import {Plus, X, Clock, Trash} from "@phosphor-icons/react";
 
 interface CortexChatPanelProps {
@@ -112,7 +123,7 @@ function EmptyCortexState({
 
 	return (
 		<div className="mx-auto w-full max-w-md">
-			<div className="rounded-2xl border border-app-line/40 bg-app-darkBox/15 p-5">
+			<div className="rounded-2xl border border-app-line/40 bg-app-dark-box/15 p-5">
 				<h3 className="font-plex text-base font-medium text-ink">
 					Cortex chat
 				</h3>
@@ -272,7 +283,8 @@ function ThreadList({
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		api.cortexChatThreads(agentId)
+		api
+			.cortexChatThreads(agentId)
 			.then((data) => setThreads(data.threads))
 			.catch((error) => console.warn("Failed to load threads:", error))
 			.finally(() => setLoading(false));
@@ -419,79 +431,73 @@ export function CortexChatPanel({
 							</span>
 						)}
 					</div>
-				<CircleButtonGroup>
-					<CircleButton
-						icon={Clock}
-						disabled={isStreaming}
-						onClick={() => setThreadListOpen(!threadListOpen)}
-						title="Thread history"
-					/>
-					<CircleButton
-						icon={Plus}
-						onClick={newThread}
-						disabled={isStreaming}
-						title="New thread"
-					/>
-					{onClose && (
+					<CircleButtonGroup>
 						<CircleButton
-							icon={X}
-							onClick={onClose}
-							title="Close"
+							icon={Clock}
+							disabled={isStreaming}
+							onClick={() => setThreadListOpen(!threadListOpen)}
+							title="Thread history"
 						/>
-					)}
-				</CircleButtonGroup>
-				<PopoverRoot open={threadListOpen} onOpenChange={setThreadListOpen}>
-					<PopoverTrigger asChild>
-						<span />
-					</PopoverTrigger>
-					<PopoverContent
-						align="end"
-						sideOffset={4}
-						className="w-72 p-0"
-					>
-						<div className="flex items-center justify-between border-b border-app-line/40 px-3 py-2">
-							<span className="text-xs font-medium text-ink-dull">Threads</span>
-						</div>
-						<ThreadList
-							agentId={agentId}
-							currentThreadId={threadId}
-							onSelectThread={loadThread}
-							onClose={() => setThreadListOpen(false)}
+						<CircleButton
+							icon={Plus}
+							onClick={newThread}
+							disabled={isStreaming}
+							title="New thread"
 						/>
-					</PopoverContent>
-				</PopoverRoot>
+						{onClose && (
+							<CircleButton icon={X} onClick={onClose} title="Close" />
+						)}
+					</CircleButtonGroup>
+					<PopoverRoot open={threadListOpen} onOpenChange={setThreadListOpen}>
+						<PopoverTrigger asChild>
+							<span />
+						</PopoverTrigger>
+						<PopoverContent align="end" sideOffset={4} className="w-72 p-0">
+							<div className="flex items-center justify-between border-b border-app-line/40 px-3 py-2">
+								<span className="text-xs font-medium text-ink-dull">
+									Threads
+								</span>
+							</div>
+							<ThreadList
+								agentId={agentId}
+								currentThreadId={threadId}
+								onSelectThread={loadThread}
+								onClose={() => setThreadListOpen(false)}
+							/>
+						</PopoverContent>
+					</PopoverRoot>
 				</div>
 			)}
 
 			{/* Messages */}
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				<div className="flex flex-col gap-5 p-3 pb-4">
-				{messages.map((message) => (
-					<div key={message.id}>
-						{message.role === "user" ? (
-							<div className="flex justify-end">
-								<div className="max-w-[85%] rounded-2xl rounded-br-md bg-app-hover/30 px-3 py-2">
-									<p className="text-sm text-ink">{message.content}</p>
+					{messages.map((message) => (
+						<div key={message.id}>
+							{message.role === "user" ? (
+								<div className="flex justify-end">
+									<div className="max-w-[85%] rounded-2xl rounded-br-md bg-app-hover/30 px-3 py-2">
+										<p className="text-sm text-ink">{message.content}</p>
+									</div>
 								</div>
-							</div>
-						) : (
-							<div className="flex flex-col gap-2">
-								{message.tool_calls && message.tool_calls.length > 0 && (
-									<div className="flex flex-col gap-1.5">
-										{message.tool_calls.map((call) => (
-											<ToolCall key={call.id} pair={toToolCallPair(call)} />
-										))}
-									</div>
-								)}
-								{message.content && (
-									<div className="text-sm text-ink-dull">
-										<Markdown>{message.content}</Markdown>
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				))}
+							) : (
+								<div className="flex flex-col gap-2">
+									{message.tool_calls && message.tool_calls.length > 0 && (
+										<div className="flex flex-col gap-1.5">
+											{message.tool_calls.map((call) => (
+												<ToolCall key={call.id} pair={toToolCallPair(call)} />
+											))}
+										</div>
+									)}
+									{message.content && (
+										<div className="text-sm text-ink-dull">
+											<Markdown>{message.content}</Markdown>
+										</div>
+									)}
+								</div>
+							)}
+						</div>
+					))}
 
 					{/* Streaming state */}
 					{isStreaming && (
