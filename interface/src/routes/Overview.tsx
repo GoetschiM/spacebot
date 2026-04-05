@@ -4,7 +4,7 @@ import {Link} from "@tanstack/react-router";
 import {Sparkle, Lightbulb} from "@phosphor-icons/react";
 import {api} from "@/api/client";
 import {CreateAgentDialog} from "@/components/CreateAgentDialog";
-import {TopologyGraph} from "@/components/TopologyGraph";
+import {OrgGraph} from "@/components/org";
 import {UpdatePill} from "@/components/UpdatePill";
 import type {ChannelLiveState} from "@/hooks/useChannelLiveState";
 import {formatUptime} from "@/lib/format";
@@ -193,7 +193,7 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 						)}
 					</div>
 				) : (
-					<TopologyGraph activeEdges={activeLinks} agents={agents} />
+					<OrgGraph activeEdges={activeLinks} agents={agents} />
 				)}
 			</div>
 

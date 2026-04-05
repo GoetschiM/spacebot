@@ -32,12 +32,14 @@ function RootLayout() {
 	const {liveStates, connectionState, hasData} = useLiveContext();
 
 	return (
-		<div className="flex h-screen flex-col overflow-hidden bg-app">
+		<div className="flex h-screen flex-col overflow-hidden bg-sidebar">
 			<ConnectionBanner state={connectionState} hasData={hasData} />
 			<div className="flex min-h-0 flex-1">
 				<Sidebar liveStates={liveStates} />
-				<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-					<Outlet />
+				<div className="flex min-w-0 flex-1 flex-col overflow-hidden pt-[10px]">
+					<div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-tl-2xl border border-app-line bg-app">
+						<Outlet />
+					</div>
 				</div>
 			</div>
 		</div>

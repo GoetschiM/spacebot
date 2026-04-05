@@ -210,7 +210,7 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 	};
 
 	return (
-		<aside className="flex w-[220px] shrink-0 flex-col border-r border-app-line bg-sidebar">
+		<aside className="flex w-[220px] shrink-0 flex-col bg-sidebar">
 			{/* Company switcher */}
 			<div className="px-3 pt-3">
 				<SelectPill variant="sidebar" size="md" className="w-full">
