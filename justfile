@@ -24,6 +24,29 @@ test-lib:
 test-integration-compile:
     cargo test --tests --no-run
 
+# Link local SpaceUI packages for development.
+# Expects the spaceui repo cloned adjacent to this repo (../spaceui).
+spaceui-link:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -d ../spaceui/packages ]; then
+        echo "Error: ../spaceui not found. Clone it adjacent to this repo:"
+        echo "  git clone https://github.com/spacedriveapp/spaceui ../spaceui"
+        exit 1
+    fi
+    cd ../spaceui
+    bun install && bun run build
+    for pkg in primitives ai forms explorer tokens; do
+        cd packages/$pkg && bun link && cd ../..
+    done
+    cd "{{justfile_directory()}}/interface"
+    bun link @spacedrive/primitives @spacedrive/ai @spacedrive/forms @spacedrive/explorer @spacedrive/tokens
+    echo "SpaceUI packages linked successfully."
+
+# Unlink SpaceUI packages and restore npm versions.
+spaceui-unlink:
+    cd interface && bun unlink @spacedrive/primitives @spacedrive/ai @spacedrive/forms @spacedrive/explorer @spacedrive/tokens && bun install
+
 gate-pr: preflight
     ./scripts/gate-pr.sh
 
