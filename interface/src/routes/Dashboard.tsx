@@ -6,7 +6,7 @@ import { RecentActivityCard } from "@/components/dashboard/RecentActivityCard";
 export function Dashboard() {
 	return (
 		<div className="flex h-full flex-col">
-			<div className="flex-1 overflow-y-auto">
+			<div className="min-h-0 flex-1 overflow-y-auto">
 				<div className="mx-auto max-w-6xl py-3 pr-3 pb-12">
 					<div className="grid h-[340px] grid-cols-2 gap-5">
 						<ActionItemsCard />

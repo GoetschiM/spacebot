@@ -1,6 +1,11 @@
-import { useMemo, useState } from "react";
-import { Link, useMatchRoute, useNavigate, useLocation } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import {useMemo, useState} from "react";
+import {
+	Link,
+	useMatchRoute,
+	useNavigate,
+	useLocation,
+} from "@tanstack/react-router";
+import {useQuery} from "@tanstack/react-query";
 import {
 	DndContext,
 	closestCenter,
@@ -17,28 +22,57 @@ import {
 	useSortable,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { api, getApiBase } from "@/api/client";
-import type { ChannelLiveState } from "@/hooks/useChannelLiveState";
-import { useAgentOrder } from "@/hooks/useAgentOrder";
-import { House, TreeStructure, Wrench, CheckSquare, GearSix, DotsThree, ChatCircleDots, Broadcast, Brain, Lightning, CalendarDots, SlidersHorizontal, BookBookmark, Plus, PencilSimple } from "@phosphor-icons/react";
-import { CircleButton, SelectPill, Popover, OptionList, OptionListItem, DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Button } from "@spacedrive/primitives";
-import { CreateAgentDialog } from "@/components/CreateAgentDialog";
-import { ProfileAvatar } from "@/components/ProfileAvatar";
-import { WorkersPanelButton } from "@/components/WorkersPanel";
-import { IS_DESKTOP, IS_MACOS } from "@/platform";
+import {CSS} from "@dnd-kit/utilities";
+import {api, getApiBase} from "@/api/client";
+import type {ChannelLiveState} from "@/hooks/useChannelLiveState";
+import {useAgentOrder} from "@/hooks/useAgentOrder";
+import {
+	House,
+	TreeStructure,
+	Wrench,
+	CheckSquare,
+	GearSix,
+	DotsThree,
+	ChatCircleDots,
+	Broadcast,
+	Brain,
+	Lightning,
+	CalendarDots,
+	SlidersHorizontal,
+	BookBookmark,
+	Plus,
+	PencilSimple,
+} from "@phosphor-icons/react";
+import {
+	CircleButton,
+	SelectPill,
+	Popover,
+	OptionList,
+	OptionListItem,
+	DialogRoot,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	Button,
+} from "@spacedrive/primitives";
+import {CreateAgentDialog} from "@/components/CreateAgentDialog";
+import {ProfileAvatar} from "@/components/ProfileAvatar";
+import {WorkersPanelButton} from "@/components/WorkersPanel";
+import {IS_DESKTOP, IS_MACOS} from "@/platform";
 
 interface SidebarProps {
 	liveStates: Record<string, ChannelLiveState>;
 }
 
 const agentSubItems = [
-	{ path: "chat", icon: ChatCircleDots, label: "Chat" },
-	{ path: "channels", icon: Broadcast, label: "Channels" },
-	{ path: "memories", icon: Brain, label: "Memory" },
-	{ path: "skills", icon: Lightning, label: "Skills" },
-	{ path: "cron", icon: CalendarDots, label: "Schedule" },
-	{ path: "config", icon: SlidersHorizontal, label: "Config" },
+	{path: "chat", icon: ChatCircleDots, label: "Chat"},
+	{path: "channels", icon: Broadcast, label: "Channels"},
+	{path: "memories", icon: Brain, label: "Memory"},
+	{path: "skills", icon: Lightning, label: "Skills"},
+	{path: "cron", icon: CalendarDots, label: "Schedule"},
+	{path: "config", icon: SlidersHorizontal, label: "Config"},
 ] as const;
 
 interface SortableAgentItemProps {
@@ -51,24 +85,26 @@ interface SortableAgentItemProps {
 	onToggle: () => void;
 }
 
-function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, isActive, isExpanded, onToggle }: SortableAgentItemProps) {
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({ id: agentId });
+function SortableAgentItem({
+	agentId,
+	displayName,
+	gradientStart,
+	gradientEnd,
+	isActive,
+	isExpanded,
+	onToggle,
+}: SortableAgentItemProps) {
+	const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+		useSortable({id: agentId});
 
 	const matchRoute = useMatchRoute();
-	const isAgentRoot = !!matchRoute({ to: "/agents/$agentId", params: { agentId } });
+	const isAgentRoot = !!matchRoute({to: "/agents/$agentId", params: {agentId}});
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
 		opacity: isDragging ? 0.5 : 1,
-		cursor: isDragging ? 'grabbing' : 'grab',
+		cursor: isDragging ? "grabbing" : "grab",
 	};
 
 	const name = displayName ?? agentId;
@@ -77,7 +113,7 @@ function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, i
 		<div ref={setNodeRef} style={style}>
 			<Link
 				to="/agents/$agentId"
-				params={{ agentId }}
+				params={{agentId}}
 				onClick={() => {
 					onToggle();
 				}}
@@ -88,7 +124,7 @@ function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, i
 							? "text-sidebar-ink"
 							: "text-sidebar-inkDull hover:bg-sidebar-selected/20 hover:text-sidebar-ink"
 				}`}
-				style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+				style={{pointerEvents: isDragging ? "none" : "auto"}}
 				{...attributes}
 				{...listeners}
 			>
@@ -107,7 +143,7 @@ function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, i
 					{agentSubItems.map((item) => {
 						const subActive = !!matchRoute({
 							to: `/agents/$agentId/${item.path}`,
-							params: { agentId },
+							params: {agentId},
 							fuzzy: true,
 						});
 						const Icon = item.icon;
@@ -115,7 +151,7 @@ function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, i
 							<Link
 								key={item.path}
 								to={`/agents/$agentId/${item.path}`}
-								params={{ agentId }}
+								params={{agentId}}
 								className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm font-medium tracking-wide transition-colors ${
 									subActive
 										? "bg-sidebar-selected/40 text-sidebar-ink"
@@ -136,14 +172,14 @@ function SortableAgentItem({ agentId, displayName, gradientStart, gradientEnd, i
 }
 
 const navItems = [
-	{ to: "/dashboard", icon: House, label: "Dashboard", exact: true },
-	{ to: "/", icon: TreeStructure, label: "Org Chart", exact: true },
-	{ to: "/workbench", icon: Wrench, label: "Workbench", exact: true },
-	{ to: "/tasks", icon: CheckSquare, label: "Tasks", exact: true },
-	{ to: "/wiki", icon: BookBookmark, label: "Wiki", exact: true },
+	{to: "/dashboard", icon: House, label: "Dashboard", exact: true},
+	{to: "/", icon: TreeStructure, label: "Org Chart", exact: true},
+	{to: "/workbench", icon: Wrench, label: "Workbench", exact: true},
+	{to: "/tasks", icon: CheckSquare, label: "Tasks", exact: true},
+	{to: "/wiki", icon: BookBookmark, label: "Wiki", exact: true},
 ] as const;
 
-export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
+export function Sidebar({liveStates: _liveStates}: SidebarProps) {
 	const navigate = useNavigate();
 	const [createOpen, setCreateOpen] = useState(false);
 	const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
@@ -151,7 +187,7 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 	const [switcherOpen, setSwitcherOpen] = useState(false);
 	const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
-	const { data: globalSettings } = useQuery({
+	const {data: globalSettings} = useQuery({
 		queryKey: ["global-settings"],
 		queryFn: api.globalSettings,
 		staleTime: 10_000,
@@ -159,19 +195,19 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 
 	const companyName = globalSettings?.company_name ?? "My Company";
 
-	const { data: agentsData } = useQuery({
+	const {data: agentsData} = useQuery({
 		queryKey: ["agents"],
 		queryFn: api.agents,
 		refetchInterval: 30_000,
 	});
 
-	const { data: providersData } = useQuery({
+	const {data: providersData} = useQuery({
 		queryKey: ["providers"],
 		queryFn: api.providers,
 		staleTime: 10_000,
 	});
 
-	const { data: projectsData } = useQuery({
+	const {data: projectsData} = useQuery({
 		queryKey: ["projects"],
 		queryFn: () => api.listProjects("active"),
 		staleTime: 30_000,
@@ -189,8 +225,12 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 		return map;
 	}, [agents]);
 	const agentGradients = useMemo(() => {
-		const map: Record<string, { start?: string | null | undefined; end?: string | null | undefined }> = {};
-		for (const a of agents) map[a.id] = { start: a.gradient_start, end: a.gradient_end };
+		const map: Record<
+			string,
+			{start?: string | null | undefined; end?: string | null | undefined}
+		> = {};
+		for (const a of agents)
+			map[a.id] = {start: a.gradient_start, end: a.gradient_end};
 		return map;
 	}, [agents]);
 	const [agentOrder, setAgentOrder] = useAgentOrder(agentIds);
@@ -203,7 +243,11 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 
 	const matchRoute = useMatchRoute();
 	const location = useLocation();
-	const activeProjectId = location.pathname === "/projects" && typeof (location.search as Record<string, unknown>)?.id === "string" ? (location.search as Record<string, unknown>).id as string : null;
+	const activeProjectId =
+		location.pathname === "/projects" &&
+		typeof (location.search as Record<string, unknown>)?.id === "string"
+			? ((location.search as Record<string, unknown>).id as string)
+			: null;
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -214,11 +258,11 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 		}),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
-		})
+		}),
 	);
 
 	const handleDragEnd = (event: DragEndEvent) => {
-		const { active, over } = event;
+		const {active, over} = event;
 		if (over && active.id !== over.id) {
 			const oldIndex = agentOrder.indexOf(active.id as string);
 			const newIndex = agentOrder.indexOf(over.id as string);
@@ -236,11 +280,13 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 							<span className="font-semibold">{companyName}</span>
 						</SelectPill>
 					</Popover.Trigger>
-					<Popover.Content align="start" sideOffset={8} className="min-w-[200px] p-2">
+					<Popover.Content
+						align="start"
+						sideOffset={8}
+						className="min-w-[200px] p-2"
+					>
 						<OptionList>
-							<OptionListItem selected>
-								{companyName}
-							</OptionListItem>
+							<OptionListItem selected>{companyName}</OptionListItem>
 						</OptionList>
 						<div className="my-2 h-px bg-app-line" />
 						<OptionList>
@@ -250,16 +296,14 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 									setComingSoonOpen(true);
 								}}
 							>
-								<Plus className="size-4" />
 								<span>Add Instance</span>
 							</OptionListItem>
 							<OptionListItem
 								onClick={() => {
 									setSwitcherOpen(false);
-									navigate({ to: "/settings", search: { tab: "instance" } });
+									navigate({to: "/settings", search: {tab: "instance"}});
 								}}
 							>
-								<PencilSimple className="size-4" />
 								<span>Edit</span>
 							</OptionListItem>
 						</OptionList>
@@ -272,8 +316,8 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 				{navItems.map((item) => {
 					const Icon = item.icon;
 					const isActive = item.exact
-						? !!matchRoute({ to: item.to })
-						: !!matchRoute({ to: item.to, fuzzy: true });
+						? !!matchRoute({to: item.to})
+						: !!matchRoute({to: item.to, fuzzy: true});
 					return (
 						<Link
 							key={item.label}
@@ -311,12 +355,13 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 								const logoUrl = project.logo_path
 									? `${getApiBase()}/agents/projects/${encodeURIComponent(project.id)}/logo`
 									: null;
-								const fallback = project.icon || project.name.slice(0, 1).toUpperCase();
+								const fallback =
+									project.icon || project.name.slice(0, 1).toUpperCase();
 								return (
 									<Link
 										key={project.id}
 										to="/projects"
-										search={{ id: project.id }}
+										search={{id: project.id}}
 										className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${
 											activeProjectId === project.id
 												? "bg-sidebar-selected/40 text-sidebar-ink"
@@ -373,9 +418,16 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 							collisionDetection={closestCenter}
 							onDragEnd={handleDragEnd}
 						>
-							<SortableContext items={agentOrder} strategy={verticalListSortingStrategy}>
+							<SortableContext
+								items={agentOrder}
+								strategy={verticalListSortingStrategy}
+							>
 								{agentOrder.map((agentId) => {
-									const isActive = !!matchRoute({ to: "/agents/$agentId", params: { agentId }, fuzzy: true });
+									const isActive = !!matchRoute({
+										to: "/agents/$agentId",
+										params: {agentId},
+										fuzzy: true,
+									});
 									return (
 										<SortableAgentItem
 											key={agentId}
@@ -402,13 +454,21 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 					<CircleButton
 						icon={GearSix}
 						title="Settings"
-						variant={!!matchRoute({ to: "/settings", fuzzy: true }) ? "active" : "default"}
+						variant={
+							!!matchRoute({to: "/settings", fuzzy: true})
+								? "active"
+								: "default"
+						}
 					/>
 				</Link>
 			</div>
 
 			{agents[0] && (
-				<CreateAgentDialog open={createOpen} onOpenChange={setCreateOpen} agentId={agents[0].id} />
+				<CreateAgentDialog
+					open={createOpen}
+					onOpenChange={setCreateOpen}
+					agentId={agents[0].id}
+				/>
 			)}
 
 			<DialogRoot open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
@@ -416,7 +476,8 @@ export function Sidebar({ liveStates: _liveStates }: SidebarProps) {
 					<DialogHeader>
 						<DialogTitle>Add Instance</DialogTitle>
 						<DialogDescription>
-							Multi-instance support is coming soon. You'll be able to connect to additional Spacebot instances from here.
+							Multi-instance support is coming soon. You'll be able to connect
+							to additional Spacebot instances from here.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

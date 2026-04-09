@@ -161,7 +161,7 @@ fn maybe_emit_approval_notification(state: &ApiState, task: &crate::tasks::Task)
     state.emit_notification(NewNotification {
         kind: NotificationKind::TaskApproval,
         severity: NotificationSeverity::Info,
-        title: format!("Approval needed: {}", task.title),
+        title: task.title.clone(),
         body: task.description.clone(),
         agent_id: Some(task.assigned_agent_id.clone()),
         related_entity_type: Some("task".to_string()),

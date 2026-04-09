@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {
 	CheckCircle,
+	Clock,
 	WarningCircle,
 	XCircle,
 	ArrowRight,
@@ -27,11 +28,11 @@ const TYPE_CONFIG: Record<
 	}
 > = {
 	task_approval: {
-		icon: CheckCircle,
-		iconClass: "text-status-warning",
+		icon: Clock,
+		iconClass: "text-ink-faint",
 		badgeVariant: "warning",
-		label: "Approval",
-		action: "Approve",
+		label: "Review",
+		action: "Review",
 	},
 	worker_failed: {
 		icon: XCircle,
@@ -61,10 +62,11 @@ function timeAgo(isoString: string): string {
 
 export function ActionItemsCard() {
 	const {notifications} = useNotifications("unread");
-	const [activeNotification, setActiveNotification] = useState<NotificationItem | null>(null);
+	const [activeNotification, setActiveNotification] =
+		useState<NotificationItem | null>(null);
 
 	return (
-		<Card variant="dark" className="flex h-full flex-col">
+		<Card variant="dark" className="flex h-full min-h-0 flex-col">
 			<CardHeader className="flex-row items-center justify-between p-4 pb-3">
 				<div className="flex items-center gap-2">
 					<h2 className="font-plex text-sm font-medium text-ink-dull">Inbox</h2>
@@ -97,14 +99,13 @@ export function ActionItemsCard() {
 								className="flex items-start gap-3 rounded-lg border border-app-line/50 bg-app-hover/20 px-3 py-2.5 transition-colors hover:bg-app-hover/40"
 							>
 								<Icon
+									weight="fill"
 									className={`mt-0.5 h-4 w-4 shrink-0 ${config.iconClass}`}
 								/>
 								<div className="min-w-0 flex-1">
 									<p className="truncate text-sm text-ink">{item.title}</p>
 									<div className="mt-1 flex items-center gap-2">
-										<Badge variant={config.badgeVariant} size="sm">
-											{config.label}
-										</Badge>
+										<Badge size="sm">{config.label}</Badge>
 										{item.agent_id && (
 											<span className="text-tiny text-ink-faint">
 												{item.agent_id}
@@ -125,7 +126,6 @@ export function ActionItemsCard() {
 									onClick={() => setActiveNotification(item)}
 								>
 									{config.action}
-									<ArrowRight className="ml-1 h-3 w-3" />
 								</Button>
 							</div>
 						);

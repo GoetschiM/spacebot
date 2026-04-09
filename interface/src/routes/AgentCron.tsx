@@ -289,11 +289,11 @@ export function AgentCron({agentId}: AgentCronProps) {
 		<div className="flex h-full flex-col">
 			{/* Stats bar */}
 			{totalJobs > 0 && (
-				<div className="flex items-center gap-2 border-b border-app-line px-6 py-3">
-					<Badge variant="accent" size="md">
+				<div className="flex items-center gap-2 border-b border-app-line px-6 py-2">
+					<Badge variant="outline" size="md">
 						{totalJobs} total
 					</Badge>
-					<Badge variant="success" size="md">
+					<Badge variant="outline" size="md">
 						{enabledJobs} enabled
 					</Badge>
 					<Badge variant="outline" size="md">
@@ -310,14 +310,14 @@ export function AgentCron({agentId}: AgentCronProps) {
 						</Badge>
 					)}
 					{data?.timezone && (
-						<span className="text-tiny text-ink-faint">
-							tz: {data.timezone}
-						</span>
+						<Badge variant="outline" size="md">
+							Timezone: {data.timezone}
+						</Badge>
 					)}
 
 					<div className="flex-1" />
 
-					<Button onClick={openCreate} size="sm">
+					<Button onClick={openCreate} variant="gray" size="md">
 						+ New Job
 					</Button>
 				</div>
@@ -656,7 +656,7 @@ export function AgentCron({agentId}: AgentCronProps) {
 					</div>
 
 					<div className="mt-2 flex justify-end gap-2">
-						<Button variant="ghost" size="sm" onClick={closeModal}>
+						<Button variant="gray" size="sm" onClick={closeModal}>
 							Cancel
 						</Button>
 						<Button
@@ -695,7 +695,7 @@ export function AgentCron({agentId}: AgentCronProps) {
 					</p>
 					<div className="flex justify-end gap-2">
 						<Button
-							variant="ghost"
+							variant="gray"
 							size="sm"
 							onClick={() => setDeleteConfirmId(null)}
 						>
@@ -853,7 +853,7 @@ function CronJobCard({
 						title={job.enabled ? "Disable" : "Enable"}
 						onClick={onToggleEnabled}
 						disabled={isToggling}
-						variant="ghost"
+						variant="gray"
 						size="sm"
 					>
 						{job.enabled ? (
@@ -866,18 +866,18 @@ function CronJobCard({
 						title="Run now"
 						onClick={onTrigger}
 						disabled={isTriggering || !job.enabled}
-						variant="ghost"
+						variant="gray"
 						size="sm"
 					>
 						<Lightning className="h-3.5 w-3.5" />
 					</Button>
-					<Button title="Edit" onClick={onEdit} variant="ghost" size="sm">
+					<Button title="Edit" onClick={onEdit} variant="gray" size="sm">
 						<PencilSimple className="h-3.5 w-3.5" />
 					</Button>
 					<Button
 						title="Delete"
 						onClick={onDelete}
-						variant="ghost"
+						variant="gray"
 						size="sm"
 						className="hover:text-red-400"
 					>
