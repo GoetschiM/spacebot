@@ -204,7 +204,7 @@ export interface ToolOutputEvent {
 	type: "tool_output";
 	agent_id: string;
 	channel_id: string | null;
-	process_type: string;
+	process_type: ProcessType;
 	process_id: string;
 	/** Stable identifier matching the tool_call that initiated this stream. */
 	call_id: string;
