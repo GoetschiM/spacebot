@@ -22,6 +22,7 @@
 //! - DM broadcast via `conversations.open`
 
 use crate::config::{SlackCommandConfig, SlackPermissions};
+use crate::messaging::apply_runtime_adapter_to_conversation_id;
 use crate::messaging::traits::{HistoryMessage, InboundStream, Messaging};
 use crate::{InboundMessage, MessageContent, OutboundResponse, StatusUpdate};
 
@@ -31,10 +32,12 @@ use slack_morphism::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{RwLock, mpsc};
+use tokio::time::{Duration, timeout};
 
 /// State shared with socket mode callbacks via `SlackClientEventsUserState`.
 struct SlackAdapterState {
     inbound_tx: mpsc::Sender<InboundMessage>,
+    runtime_key: String,
     permissions: Arc<ArcSwap<SlackPermissions>>,
     bot_token: String,
     bot_user_id: String,
@@ -55,6 +58,7 @@ struct SlackUserIdentity {
 
 /// Slack adapter.
 pub struct SlackAdapter {
+    runtime_key: String,
     bot_token: String,
     app_token: String,
     permissions: Arc<ArcSwap<SlackPermissions>>,
@@ -73,11 +77,13 @@ pub struct SlackAdapter {
 
 impl SlackAdapter {
     pub fn new(
+        runtime_key: impl Into<String>,
         bot_token: impl Into<String>,
         app_token: impl Into<String>,
         permissions: Arc<ArcSwap<SlackPermissions>>,
         commands: Vec<SlackCommandConfig>,
     ) -> anyhow::Result<Self> {
+        let runtime_key = runtime_key.into();
         let bot_token = bot_token.into();
         let client = Arc::new(SlackClient::new(
             SlackClientHyperConnector::new().context("failed to create slack HTTP connector")?,
@@ -88,6 +94,7 @@ impl SlackAdapter {
             .map(|c| (c.command, c.agent_id))
             .collect();
         Ok(Self {
+            runtime_key,
             bot_token,
             app_token: app_token.into(),
             permissions,
@@ -117,12 +124,29 @@ async fn handle_push_event(
 ) -> UserCallbackResult<()> {
     match event.event {
         SlackEventCallbackBody::Message(msg) => {
+            let channel = msg
+                .origin
+                .channel
+                .as_ref()
+                .map(|c| c.0.as_str())
+                .unwrap_or("none");
+            let sender = msg
+                .sender
+                .user
+                .as_ref()
+                .map(|u| u.0.as_str())
+                .unwrap_or("none");
+            let subtype = msg.subtype.as_ref().map(|s| format!("{:?}", s));
+            tracing::debug!(channel, sender, ?subtype, "slack push event: message");
             handle_message_event(msg, &event.team_id, client, states).await
         }
         SlackEventCallbackBody::AppMention(mention) => {
             handle_app_mention_event(mention, &event.team_id, client, states).await
         }
-        _ => Ok(()),
+        _ => {
+            tracing::debug!(event_type = ?std::mem::discriminant(&event.event), "slack push event: unhandled");
+            Ok(())
+        }
     }
 }
 
@@ -133,8 +157,14 @@ async fn handle_message_event(
     client: Arc<SlackHyperClient>,
     states: SlackClientEventsUserState,
 ) -> UserCallbackResult<()> {
-    // Skip message edits / deletes / bot_message subtypes
-    if msg_event.subtype.is_some() {
+    // Skip message edits / deletes / bot_message subtypes, but allow file-related
+    // subtypes so user-uploaded images and documents are processed.
+    if let Some(ref subtype) = msg_event.subtype
+        && !matches!(
+            subtype,
+            SlackMessageEventType::FileShare | SlackMessageEventType::FileShared
+        )
+    {
         return Ok(());
     }
 
@@ -166,41 +196,53 @@ async fn handle_message_event(
     let ts = msg_event.origin.ts.0.clone();
 
     let perms = adapter_state.permissions.load();
+    let is_dm = channel_id.starts_with('D');
 
-    // DM filter
-    if channel_id.starts_with('D') {
+    // DM filter — allowed DMs skip workspace/channel filters entirely
+    if is_dm {
         if perms.dm_allowed_users.is_empty() {
+            tracing::debug!(channel_id, "DM dropped: dm_allowed_users is empty");
             return Ok(());
         }
-        if let Some(ref uid) = user_id
-            && !perms.dm_allowed_users.contains(uid)
+        if let Some(ref sender_id) = user_id
+            && !perms.dm_allowed_users.contains(sender_id)
+        {
+            tracing::debug!(
+                channel_id,
+                user_id = sender_id.as_str(),
+                "DM dropped: user not in dm_allowed_users"
+            );
+            return Ok(());
+        }
+        tracing::info!(
+            channel_id,
+            ?user_id,
+            "DM permitted, bypassing channel filter"
+        );
+    }
+
+    if !is_dm {
+        // Workspace filter
+        if let Some(ref filter) = perms.workspace_filter
+            && !filter.contains(&team_id_str)
+        {
+            return Ok(());
+        }
+
+        // Channel filter
+        if let Some(allowed) = perms.channel_filter.get(&team_id_str)
+            && !allowed.is_empty()
+            && !allowed.contains(&channel_id)
         {
             return Ok(());
         }
     }
 
-    // Workspace filter
-    if let Some(ref filter) = perms.workspace_filter
-        && !filter.contains(&team_id_str)
-    {
-        return Ok(());
-    }
+    let base_conversation_id = format!("slack:{}:{}", team_id_str, channel_id);
+    let conversation_id =
+        apply_runtime_adapter_to_conversation_id(&adapter_state.runtime_key, base_conversation_id);
 
-    // Channel filter
-    if let Some(allowed) = perms.channel_filter.get(&team_id_str)
-        && !allowed.is_empty()
-        && !allowed.contains(&channel_id)
-    {
-        return Ok(());
-    }
-
-    let conversation_id = if let Some(ref thread_ts) = msg_event.origin.thread_ts {
-        format!("slack:{}:{}:{}", team_id_str, channel_id, thread_ts.0)
-    } else {
-        format!("slack:{}:{}", team_id_str, channel_id)
-    };
-
-    let content = extract_message_content(&msg_event.content);
+    let content = extract_message_content(&msg_event.content, &adapter_state.bot_token);
 
     let (metadata, formatted_author) = build_metadata_and_author(
         &team_id_str,
@@ -215,9 +257,62 @@ async fn handle_message_event(
         &adapter_state.channel_name_cache,
     )
     .await;
+    let mut metadata = metadata;
+    let bot_mention = format!("<@{}>", adapter_state.bot_user_id);
+    let mentioned_bot = msg_event
+        .content
+        .as_ref()
+        .and_then(|content| content.text.as_ref())
+        .map(|text| text.contains(&bot_mention))
+        .unwrap_or(false);
+    let token = SlackApiToken::new(SlackApiTokenValue(adapter_state.bot_token.clone()));
+    let session = client.open_session(&token);
+    let replied_to_bot = if let Some(thread_ts) = msg_event.origin.thread_ts.as_ref() {
+        // For threaded replies, treat as explicit invoke only when the thread
+        // root message belongs to this bot.
+        if thread_ts.0 != ts {
+            let thread_replies_request = SlackApiConversationsRepliesRequest::new(
+                SlackChannelId(channel_id.clone()),
+                thread_ts.clone(),
+            )
+            .with_limit(1);
+            match timeout(
+                Duration::from_secs(2),
+                session.conversations_replies(&thread_replies_request),
+            )
+            .await
+            {
+                Ok(Ok(response)) => response
+                    .messages
+                    .first()
+                    .and_then(|message| message.sender.user.as_ref())
+                    .is_some_and(|user| user.0 == adapter_state.bot_user_id),
+                Ok(Err(error)) => {
+                    tracing::debug!(%error, "failed to resolve slack thread parent for reply invoke");
+                    false
+                }
+                Err(error) => {
+                    tracing::debug!(
+                        %error,
+                        "timed out resolving slack thread parent for reply invoke"
+                    );
+                    false
+                }
+            }
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+    metadata.insert(
+        "slack_mentions_or_replies_to_bot".into(),
+        serde_json::Value::Bool(mentioned_bot || replied_to_bot),
+    );
 
     send_inbound(
         &adapter_state.inbound_tx,
+        &adapter_state.runtime_key,
         ts,
         conversation_id,
         user_id.unwrap_or_default(),
@@ -277,11 +372,9 @@ async fn handle_app_mention_event(
         return Ok(());
     }
 
-    let conversation_id = if let Some(ref thread_ts) = mention.origin.thread_ts {
-        format!("slack:{}:{}:{}", team_id_str, channel_id, thread_ts.0)
-    } else {
-        format!("slack:{}:{}", team_id_str, channel_id)
-    };
+    let base_conversation_id = format!("slack:{}:{}", team_id_str, channel_id);
+    let conversation_id =
+        apply_runtime_adapter_to_conversation_id(&adapter_state.runtime_key, base_conversation_id);
 
     // Strip the leading @-mention from the text so the agent sees clean input
     let raw_text = mention.content.text.clone().unwrap_or_default();
@@ -302,9 +395,15 @@ async fn handle_app_mention_event(
         &adapter_state.channel_name_cache,
     )
     .await;
+    let mut metadata = metadata;
+    metadata.insert(
+        "slack_mentions_or_replies_to_bot".into(),
+        serde_json::Value::Bool(true),
+    );
 
     send_inbound(
         &adapter_state.inbound_tx,
+        &adapter_state.runtime_key,
         ts,
         conversation_id,
         user_id,
@@ -413,7 +512,9 @@ async fn handle_command_event(
 
     let agent_id = adapter_state.commands[&command_str].clone();
 
-    let conversation_id = format!("slack:{}:{}", team_id, channel_id);
+    let base_conversation_id = format!("slack:{}:{}", team_id, channel_id);
+    let conversation_id =
+        apply_runtime_adapter_to_conversation_id(&adapter_state.runtime_key, base_conversation_id);
 
     let mut metadata = HashMap::new();
     metadata.insert(
@@ -452,6 +553,7 @@ async fn handle_command_event(
     let inbound = InboundMessage {
         id: msg_id,
         source: "slack".into(),
+        adapter: Some(adapter_state.runtime_key.clone()),
         conversation_id,
         sender_id: user_id.clone(),
         agent_id: None,
@@ -548,11 +650,9 @@ async fn handle_interaction_event(
     // Use trigger_id as the unique message id for this interaction turn.
     let msg_id = block_actions.trigger_id.0.clone();
 
-    let conversation_id = if let Some(ref ts) = message_ts {
-        format!("slack:{}:{}:{}", team_id, channel_id, ts)
-    } else {
-        format!("slack:{}:{}", team_id, channel_id)
-    };
+    let base_conversation_id = format!("slack:{}:{}", team_id, channel_id);
+    let conversation_id =
+        apply_runtime_adapter_to_conversation_id(&adapter_state.runtime_key, base_conversation_id);
 
     // Process each action in the payload as a separate inbound message.
     // In practice Slack sends one action per interaction, but the API allows many.
@@ -632,6 +732,7 @@ async fn handle_interaction_event(
         let inbound = InboundMessage {
             id,
             source: "slack".into(),
+            adapter: Some(adapter_state.runtime_key.clone()),
             conversation_id: conversation_id.clone(),
             sender_id: user_id.clone(),
             agent_id: None,
@@ -655,7 +756,7 @@ async fn handle_interaction_event(
 
 impl Messaging for SlackAdapter {
     fn name(&self) -> &str {
-        "slack"
+        &self.runtime_key
     }
 
     async fn start(&self) -> crate::Result<InboundStream> {
@@ -675,6 +776,7 @@ impl Messaging for SlackAdapter {
 
         let adapter_state = Arc::new(SlackAdapterState {
             inbound_tx,
+            runtime_key: self.runtime_key.clone(),
             permissions: self.permissions.clone(),
             bot_token: self.bot_token.clone(),
             bot_user_id,
@@ -1022,7 +1124,13 @@ impl Messaging for SlackAdapter {
     async fn broadcast(&self, target: &str, response: OutboundResponse) -> crate::Result<()> {
         let session = self.session();
 
-        let channel_id = if let Some(user_id_str) = target.strip_prefix("dm:") {
+        // Parse an optional thread target encoded as `#thread:<ts>` suffix.
+        let (bare_target, thread_ts) = match target.split_once("#thread:") {
+            Some((prefix, ts)) if !ts.is_empty() => (prefix, Some(SlackTs(ts.to_string()))),
+            _ => (target, None),
+        };
+
+        let channel_id = if let Some(user_id_str) = bare_target.strip_prefix("dm:") {
             let open_req = SlackApiConversationsOpenRequest::new()
                 .with_users(vec![SlackUserId(user_id_str.to_string())]);
             let open_resp = session
@@ -1031,16 +1139,17 @@ impl Messaging for SlackAdapter {
                 .context("failed to open Slack DM conversation")?;
             open_resp.channel.id
         } else {
-            SlackChannelId(target.to_string())
+            SlackChannelId(bare_target.to_string())
         };
 
         match response {
             OutboundResponse::Text(text) => {
                 for chunk in split_message(&text, 12_000) {
-                    let req = SlackApiChatPostMessageRequest::new(
+                    let mut req = SlackApiChatPostMessageRequest::new(
                         channel_id.clone(),
                         markdown_content(chunk),
                     );
+                    req = req.opt_thread_ts(thread_ts.clone());
                     session
                         .chat_post_message(&req)
                         .await
@@ -1056,7 +1165,8 @@ impl Messaging for SlackAdapter {
                         .with_text(text)
                         .with_blocks(slack_blocks)
                 };
-                let req = SlackApiChatPostMessageRequest::new(channel_id.clone(), content);
+                let mut req = SlackApiChatPostMessageRequest::new(channel_id.clone(), content);
+                req = req.opt_thread_ts(thread_ts.clone());
                 session
                     .chat_post_message(&req)
                     .await
@@ -1140,10 +1250,12 @@ impl Messaging for SlackAdapter {
                 } else {
                     "unknown".to_string()
                 };
+                let timestamp = parse_slack_history_timestamp(&msg.origin.ts.0);
                 HistoryMessage {
                     author,
                     content: msg.content.text.clone().unwrap_or_default(),
                     is_bot,
+                    timestamp,
                 }
             })
             .collect();
@@ -1205,6 +1317,37 @@ fn extract_thread_ts(message: &InboundMessage) -> Option<SlackTs> {
         .map(|s| SlackTs(s.to_string()))
 }
 
+fn parse_slack_history_timestamp(raw_timestamp: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    let Some(seconds_part) = raw_timestamp.split('.').next() else {
+        tracing::warn!(timestamp = %raw_timestamp, "slack history timestamp missing seconds");
+        return None;
+    };
+
+    let seconds = match seconds_part.parse::<i64>() {
+        Ok(seconds) => seconds,
+        Err(error) => {
+            tracing::warn!(
+                timestamp = %raw_timestamp,
+                %error,
+                "failed to parse slack history timestamp"
+            );
+            return None;
+        }
+    };
+
+    match chrono::DateTime::from_timestamp(seconds, 0) {
+        Some(timestamp) => Some(timestamp),
+        None => {
+            tracing::warn!(
+                timestamp = %raw_timestamp,
+                seconds,
+                "slack history timestamp out of range"
+            );
+            None
+        }
+    }
+}
+
 /// Build a `SlackMessageContent` using a Markdown block with plain text fallback.
 ///
 /// The Markdown block supports standard markdown (bold, italic, lists, code,
@@ -1228,7 +1371,10 @@ fn markdown_content(text: impl Into<String>) -> SlackMessageContent {
 }
 
 /// Extract `MessageContent` from an optional `SlackMessageContent`.
-fn extract_message_content(content: &Option<SlackMessageContent>) -> MessageContent {
+fn extract_message_content(
+    content: &Option<SlackMessageContent>,
+    bot_token: &str,
+) -> MessageContent {
     let Some(msg_content) = content else {
         return MessageContent::Text(String::new());
     };
@@ -1243,6 +1389,8 @@ fn extract_message_content(content: &Option<SlackMessageContent>) -> MessageCont
                     mime_type: f.mimetype.as_ref().map(|m| m.0.clone()).unwrap_or_default(),
                     url: url.to_string(),
                     size_bytes: None,
+                    auth_header: Some(format!("Bearer {}", bot_token)),
+                    pre_saved_id: None,
                 })
             })
             .collect();
@@ -1282,9 +1430,14 @@ async fn build_metadata_and_author(
         "slack_channel_id".into(),
         serde_json::Value::String(channel_id.into()),
     );
+    let ts_string: String = ts.into();
     metadata.insert(
         "slack_message_ts".into(),
-        serde_json::Value::String(ts.into()),
+        serde_json::Value::String(ts_string.clone()),
+    );
+    metadata.insert(
+        crate::metadata_keys::MESSAGE_ID.into(),
+        serde_json::Value::String(ts_string),
     );
 
     if let Some(tts) = thread_ts {
@@ -1310,8 +1463,17 @@ async fn build_metadata_and_author(
     let session = client.open_session(&token);
 
     // Resolve channel name via cache or conversations.info API.
+    let is_dm = channel_id.starts_with('D');
     if let Some(name) = channel_name_cache.read().await.get(channel_id).cloned() {
-        metadata.insert("slack_channel_name".into(), serde_json::Value::String(name));
+        metadata.insert(
+            "slack_channel_name".into(),
+            serde_json::Value::String(name.clone()),
+        );
+        let display_name = if is_dm { name } else { format!("#{name}") };
+        metadata.insert(
+            crate::metadata_keys::CHANNEL_NAME.into(),
+            serde_json::Value::String(display_name),
+        );
     } else {
         match session
             .conversations_info(&SlackApiConversationsInfoRequest::new(SlackChannelId(
@@ -1325,11 +1487,19 @@ async fn build_metadata_and_author(
                         .write()
                         .await
                         .insert(channel_id.to_string(), name.clone());
-                    metadata.insert("slack_channel_name".into(), serde_json::Value::String(name));
+                    metadata.insert(
+                        "slack_channel_name".into(),
+                        serde_json::Value::String(name.clone()),
+                    );
+                    let display_name = if is_dm { name } else { format!("#{name}") };
+                    metadata.insert(
+                        crate::metadata_keys::CHANNEL_NAME.into(),
+                        serde_json::Value::String(display_name),
+                    );
                 }
             }
             // DM channels (D-prefixed) don't support conversations.info in all cases
-            Err(error) if !channel_id.starts_with('D') => {
+            Err(error) if !is_dm => {
                 tracing::warn!(
                     %error,
                     channel_id = %channel_id,
@@ -1385,9 +1555,14 @@ async fn build_metadata_and_author(
         && !metadata.contains_key("slack_channel_name")
         && let Some(display_name) = metadata.get("sender_display_name").and_then(|v| v.as_str())
     {
+        let dm_channel_name = format!("dm-{display_name}");
         metadata.insert(
             "slack_channel_name".into(),
-            serde_json::Value::String(format!("dm-{display_name}")),
+            serde_json::Value::String(dm_channel_name.clone()),
+        );
+        metadata.insert(
+            crate::metadata_keys::CHANNEL_NAME.into(),
+            serde_json::Value::String(dm_channel_name),
         );
     }
 
@@ -1395,8 +1570,10 @@ async fn build_metadata_and_author(
 }
 
 /// Dispatch a fully-constructed `InboundMessage` to the inbound channel.
+#[allow(clippy::too_many_arguments)]
 async fn send_inbound(
     tx: &mpsc::Sender<InboundMessage>,
+    runtime_key: &str,
     ts: String,
     conversation_id: String,
     sender_id: String,
@@ -1407,6 +1584,7 @@ async fn send_inbound(
     let inbound = InboundMessage {
         id: ts,
         source: "slack".into(),
+        adapter: Some(runtime_key.to_string()),
         conversation_id,
         sender_id,
         agent_id: None,
@@ -1499,10 +1677,38 @@ fn split_message(text: &str, max_len: usize) -> Vec<String> {
     chunks
 }
 
-/// Sanitize an emoji name for Slack reactions (strip colons, lowercase).
+/// Convert an emoji input to a Slack reaction short-code name.
+///
+/// Handles three input forms:
+/// 1. Unicode emoji (e.g. "👍") → looked up via the `emojis` crate → "thumbsup"
+/// 2. Colon-wrapped short-code (e.g. ":thumbsup:") → stripped to "thumbsup"
+/// 3. Plain short-code (e.g. "thumbsup") → passed through as-is
 fn sanitize_reaction_name(emoji: &str) -> String {
-    emoji
-        .trim()
+    let trimmed = emoji.trim();
+    if let Some(emoji) = emojis::get(trimmed) {
+        if let Some(shortcode) = emoji.shortcode() {
+            // Note: shortcodes come from gemoji (GitHub's set) which may not match Slack's
+            // shortcode names for uncommon emojis. Common emojis (thumbsup, heart, etc.) are
+            // consistent across both sets.
+            tracing::debug!(
+                unicode = trimmed,
+                shortcode,
+                "resolved unicode emoji to shortcode"
+            );
+            return shortcode.to_string();
+        }
+        // Unicode emoji matched but has no shortcode — use the emoji's name as fallback.
+        // Raw unicode would be rejected by Slack's reactions API.
+        let name = emoji.name().replace(' ', "_").to_lowercase();
+        tracing::warn!(
+            unicode = trimmed,
+            fallback_name = %name,
+            "emoji matched but has no shortcode, using name as fallback"
+        );
+        return name;
+    }
+    // Fall back to stripping colons and lowercasing (handles ":thumbsup:" and "thumbsup").
+    trimmed
         .trim_start_matches(':')
         .trim_end_matches(':')
         .to_lowercase()
@@ -1520,5 +1726,82 @@ fn resolve_slack_user_identity(user: &SlackUser, user_id: &str) -> SlackUserIden
     SlackUserIdentity {
         display_name,
         username,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_reaction_name_unicode_emoji_with_shortcode() {
+        // gemoji maps 👍 to "+1" — verify we get the shortcode, not the unicode back
+        let result = sanitize_reaction_name("\u{1F44D}"); // 👍
+        assert_eq!(
+            result, "+1",
+            "should resolve unicode thumbs-up to its gemoji shortcode"
+        );
+    }
+
+    #[test]
+    fn sanitize_reaction_name_unicode_heart() {
+        let result = sanitize_reaction_name("\u{2764}\u{FE0F}"); // ❤️
+        assert_eq!(result, "heart");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_colon_wrapped_shortcode() {
+        let result = sanitize_reaction_name(":thumbsup:");
+        assert_eq!(result, "thumbsup");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_plain_shortcode() {
+        let result = sanitize_reaction_name("thumbsup");
+        assert_eq!(result, "thumbsup");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_colon_wrapped_uppercased() {
+        let result = sanitize_reaction_name(":ThumbsUp:");
+        assert_eq!(result, "thumbsup");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_whitespace_trimmed() {
+        let result = sanitize_reaction_name("  :fire:  ");
+        // After trim, this won't match emojis::get (it's a shortcode string),
+        // so falls through to colon-stripping path
+        assert_eq!(result, "fire");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_unicode_emoji_without_shortcode() {
+        // The emojis crate may have entries without shortcodes.
+        // Find one programmatically to keep the test resilient.
+        let emoji_without_shortcode = emojis::iter().find(|e| e.shortcode().is_none());
+        if let Some(emoji) = emoji_without_shortcode {
+            let result = sanitize_reaction_name(emoji.as_str());
+            let expected = emoji.name().replace(' ', "_").to_lowercase();
+            assert_eq!(
+                result, expected,
+                "emoji without shortcode should fall back to name with underscores"
+            );
+        }
+        // If all emojis have shortcodes, the fallback path is untestable
+        // with real data, but the code path still exists for safety.
+    }
+
+    #[test]
+    fn sanitize_reaction_name_custom_slack_emoji() {
+        // Custom Slack emojis come as plain names like "partyparrot"
+        let result = sanitize_reaction_name("partyparrot");
+        assert_eq!(result, "partyparrot");
+    }
+
+    #[test]
+    fn sanitize_reaction_name_custom_with_colons() {
+        let result = sanitize_reaction_name(":partyparrot:");
+        assert_eq!(result, "partyparrot");
     }
 }

@@ -1,1 +1,14 @@
-[System: a background process has completed. Check your history and status block for the result. Do not mention internal processes (branch, worker, retrigger, status block). If the new result does not add meaningful new information beyond what you already told the user, skip responding. If it does add value, reply to the original unanswered user ask directly, even if newer chat messages appeared since then.]
+[System: {{ results | length }} background process(es) just completed. The user has NOT seen any of the results below. You MUST relay the full substance to the user using the reply tool.
+
+{% for r in results %}
+--- {{ r.process_type }} {{ r.process_id }}{% if not r.success %} (FAILED){% endif %} ---
+{{ r.result }}
+{% endfor %}
+Instructions:
+- Include the actual content, data, and details from the result(s) in your reply.
+- If a result includes a user-facing file artifact (PDF, DOCX, CSV, ZIP, image, etc.), send it with `send_file` instead of only pasting a local path.
+- Do not just reference or tease the results — relay them fully.
+- Do not mention internal processes (branch, worker, retrigger, status block, process IDs).
+- If a result failed, let the user know what went wrong in plain language.
+- If a process timed out or was cancelled, offer to try again.
+- Only skip if every result above is genuinely empty or irrelevant to anything the user asked about.]

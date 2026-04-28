@@ -229,13 +229,13 @@ This is a peer agent. Communication is collaborative and informational.
 
 ### ROLE.md
 
-New identity file alongside `SOUL.md`, `IDENTITY.md`, and `USER.md`. Defines what the agent is supposed to *do* — responsibilities, scope, what to handle vs what to escalate, what success looks like.
+New identity file alongside `SOUL.md` and `IDENTITY.md`. Defines what the agent is supposed to *do* — responsibilities, scope, what to handle vs what to escalate, what success looks like.
 
-`SOUL.md` is personality. `IDENTITY.md` is who the agent is. `USER.md` is context about the human. `ROLE.md` is the job: "you handle tier 1 support tickets, escalate billing issues to the finance agent, never touch production infrastructure."
+`SOUL.md` is personality. `IDENTITY.md` is who the agent is. `ROLE.md` is the job: "you handle tier 1 support tickets, escalate billing issues to the finance agent, never touch production infrastructure."
 
 In single-agent setups, `ROLE.md` separates identity from operational responsibilities. In multi-agent setups, it's what differentiates agents operationally — each agent sees its position in the hierarchy via org context, and `ROLE.md` tells it what to actually do in that position. Structure vs scope.
 
-Loaded the same way as the other identity files — from the agent's workspace directory, injected into the system prompt by `identity/files.rs`.
+Loaded the same way as the other identity files — from the agent root directory (`~/.spacebot/agents/{id}/`), injected into the system prompt by `identity/files.rs`.
 
 ### Organizational Awareness
 
@@ -488,3 +488,17 @@ Persistent knowledge nodes with per-agent read/write permissions. Separate desig
 **Auditable communication.** Every inter-agent message is persisted in `conversation_messages` with full metadata. The dashboard shows the communication graph with live activity. There are no hidden side channels — everything flows through the link system.
 
 **Foundation for agent teams.** Once links and the topology API exist, the React Flow editor turns agent wiring into a visual, drag-and-drop experience. Non-technical users can design agent organizations without editing config files.
+
+## Known Issues
+
+### Webchat / Portal naming mismatch
+
+The webchat messaging adapter registers as `"webchat"` (`WebChatAdapter::name()` in `messaging/webchat.rs`), but the frontend constructs session IDs with the prefix `"portal"` (`useWebChat.ts`: `portal:chat:${agentId}`). The backend passes the frontend's `session_id` through as the `conversation_id` unchanged, so `extract_platform()` derives `platform = "portal"` from the conversation_id prefix.
+
+This means two different names refer to the same thing:
+- **Adapter source** (`message.source`): `"webchat"` — used for outbound routing
+- **Platform / conversation_id prefix**: `"portal"` — used for display, channel store
+
+The display name is hardcoded to `"portal:chat"` in `extract_display_name()`. The platform badge shows `"portal"` with no custom icon or color (falls through to gray default).
+
+These should be unified under a single name. Either rename the adapter to `"portal"`, change the frontend session prefix to `"webchat:chat:{agentId}"`, or pick a third name. Needs a decision before addressing.

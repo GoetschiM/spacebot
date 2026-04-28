@@ -1,7 +1,8 @@
 //! Branch tool for forking context and thinking (channel only).
 
 use crate::BranchId;
-use crate::agent::channel::{ChannelState, spawn_branch_from_state};
+use crate::agent::channel::ChannelState;
+use crate::agent::channel_dispatch::spawn_branch_from_state;
 use rig::completion::ToolDefinition;
 use rig::tool::Tool;
 use schemars::JsonSchema;
@@ -68,16 +69,30 @@ impl Tool for BranchTool {
     }
 
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        let readiness = self.state.deps.runtime_config.work_readiness();
         let branch_id = spawn_branch_from_state(&self.state, &args.description)
             .await
             .map_err(|e| BranchError(format!("{e}")))?;
+
+        let readiness_note = if readiness.ready {
+            String::new()
+        } else {
+            let reason = readiness
+                .reason
+                .map(|value| value.as_str())
+                .unwrap_or("unknown");
+            format!(
+                " Readiness note: warmup is not fully ready ({reason}, state: {:?}); a warmup pass may already be running or was queued in the background.",
+                readiness.warmup_state
+            )
+        };
 
         Ok(BranchOutput {
             branch_id,
             spawned: true,
             message: format!(
-                "Branch {branch_id} spawned. It will investigate: {}",
-                args.description
+                "Branch {branch_id} spawned. It will investigate: {}.{}",
+                args.description, readiness_note
             ),
         })
     }
